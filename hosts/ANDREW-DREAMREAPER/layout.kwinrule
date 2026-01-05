@@ -1,0 +1,108 @@
+[Application settings for Alacritty]
+Description=Application settings for Alacritty
+opacityactive=80
+opacityactiverule=2
+wmclass=alacritty Alacritty
+wmclasscomplete=true
+wmclassmatch=1
+
+[Application settings for Hexchat]
+Description=Application settings for Hexchat
+clientmachine=localhost
+opacityactive=80
+opacityactiverule=2
+opacityinactive=80
+opacityinactiverule=2
+position=3842,1030
+positionrule=3
+size=1276,406
+sizerule=3
+wmclass=hexchat Hexchat
+wmclasscomplete=true
+wmclassmatch=1
+
+[Application settings for TeamSpeak 3]
+Description=Application settings for TeamSpeak 3
+clientmachine=localhost
+opacityactive=80
+opacityactiverule=2
+opacityinactive=80
+opacityinactiverule=2
+position=3842,4
+positionrule=3
+size=1276,1026
+sizerule=3
+wmclass=ts3client TeamSpeak 3
+wmclasscomplete=true
+wmclassmatch=1
+
+[Application settings for dev.zed.Zed]
+Description=Application settings for dev.zed.Zed
+opacityactive=95
+opacityactiverule=2
+position=1331,4
+positionrule=3
+size=2507,1432
+sizerule=3
+wmclass=zed-editor dev.zed.Zed
+wmclasscomplete=true
+wmclassmatch=1
+
+[Application settings for discord]
+Description=Application settings for discord
+clientmachine=localhost
+opacityactive=90
+opacityactiverule=2
+opacityinactive=90
+opacityinactiverule=2
+position=4,4
+positionrule=3
+size=1323,1432
+sizerule=3
+wmclass=discord
+wmclassmatch=1
+
+[Application settings for org.kde.dolphin]
+Description=Application settings for org.kde.dolphin
+opacityactive=90
+opacityactiverule=2
+wmclass=dolphin org.kde.dolphin
+wmclasscomplete=true
+wmclassmatch=1
+
+[Application settings for teams-for-linux]
+Description=Application settings for teams-for-linux
+clientmachine=localhost
+position=4,4
+positionrule=3
+size=1323,1432
+sizerule=3
+wmclass=teams-for-linux
+wmclassmatch=1
+
+[Application settings for zen]
+Description=Application settings for zen
+opacityinactiverule=2
+wmclass=zen
+wmclassmatch=1
+
+[Settings for yakuake org.kde.yakuake]
+Description=Settings for yakuake org.kde.yakuake
+opacityactive=90
+opacityactiverule=2
+types=1
+wmclass=yakuake org.kde.yakuake
+wmclasscomplete=true
+wmclassmatch=1
+
+[Window settings for Slack]
+Description=Window settings for Slack
+position=4,4
+positionrule=3
+size=1323,1432
+sizerule=3
+title=linkedin-engagement (Channel) - savages - Slack
+types=1
+wmclass=slack Slack
+wmclasscomplete=true
+wmclassmatch=1
