@@ -73,7 +73,7 @@
   my.programs._1password = {
     enable = true;
     polkitPolicyOwners = [ "zealsprince" ];
-    allowedBrowsers = [ "firefox" "zen" ];
+    allowedBrowsers = [ "firefox" "firefox-devedition" "zen" ];
   };
 
   my.security.howdy = {

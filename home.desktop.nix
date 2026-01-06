@@ -39,6 +39,8 @@
     autostart = {
       enable = true;
 
+      ckbNext.enable = true;
+
       dropbox.enable = true;
 
       # Yakuake: autostart hidden (tray) and toggle via Ctrl+;

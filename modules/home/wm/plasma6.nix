@@ -3,6 +3,12 @@
 let
   cfg = config.my.home.wm.plasma6;
 
+  # Keep ckb-next build consistent with the system configuration:
+  # disable dbusmenu-qt5 so the GUI can build even when dbusmenu-qt5 isn't available.
+  ckbNextPkg = pkgs.ckb-next.overrideAttrs (old: {
+    cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DUSE_DBUS_MENU=0" ];
+  });
+
   kwriteconfig = "${pkgs.kdePackages.kconfig}/bin/kwriteconfig6";
 
   mkAutostartDesktop = { name, exec, startupNotify ? false }:
@@ -232,6 +238,10 @@ in
         type = lib.types.bool;
         default = true;
         description = "Whether to manage KDE/Plasma autostart desktop entries.";
+      };
+
+      ckbNext = {
+        enable = lib.mkEnableOption "Autostart ckb-next (tray/background)";
       };
 
       yakuake = {
@@ -573,6 +583,14 @@ in
             exec =
               "${pkgs.ferdium}/bin/ferdium"
               + lib.optionalString cfg.autostart.ferdium.minimized " --minimized";
+          };
+      })
+
+      (lib.mkIf (cfg.autostart.enable && cfg.autostart.ckbNext.enable) {
+        ".config/autostart/ckb-next.desktop".text =
+          mkAutostartDesktopTray {
+            name = "ckb-next";
+            exec = "${ckbNextPkg}/bin/ckb-next --background";
           };
       })
 
