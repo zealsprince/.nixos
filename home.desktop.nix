@@ -65,10 +65,11 @@
       mullvadVpn.enable = true;
       slack.enable = true;
       teams.enable = true;
+      ferdium.enable = true;
 
       # FlexDesigner: start silently and keep it in the tray (best-effort)
       flexDesigner = {
-        enable = true;
+        enable = false;
         delaySeconds = 2;
       };
     };

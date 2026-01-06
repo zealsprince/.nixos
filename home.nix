@@ -35,8 +35,19 @@ let
 in
 
 {
+  # User-scoped fonts (Home Manager)
+  my.home.fonts = {
+    enable = true;
+    # Keep the set small (DejaVu + a few nice defaults + emoji).
+    # Override here if you want to add/remove fonts later.
+    # packages = with pkgs; [ dejavu_fonts liberation_ttf freefont_ttf noto-fonts-color-emoji ];
+  };
+
   imports = [
     ./modules/home/base.nix
+
+    # User-scoped fonts + fontconfig (avoid system-wide font cache work at boot)
+    ./modules/home/fonts.nix
 
     # Home Manager package sets
     #

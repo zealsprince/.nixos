@@ -36,17 +36,26 @@ in
         # Development tools
         zed-editor-fhs
         vscode
+        obsidian
         firefox-devedition
         ungoogled-chromium
+        dbeaver-bin
+        chatbox
+        unityhub
+        godot
+        love
 
         # Creative tools
         inputs.affinity-nix.packages.${pkgs.system}.v3
         blender-hip
         krita
         renoise
+        kdePackages.kdenlive
+        davinci-resolve
 
         # Social & Work
         hexchat
+        ferdium
         discord
         teamspeak3
         teams-for-linux
@@ -58,6 +67,7 @@ in
         # Gaming & Wine
         lutris
         prismlauncher
+        gamescope
       ])
       ++ cfg.packages;
   };

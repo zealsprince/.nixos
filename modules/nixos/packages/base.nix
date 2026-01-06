@@ -17,7 +17,7 @@
     # Core tooling
     git
     gnupg
-    vim
+    vim-full
     wget
     tmux
     curl

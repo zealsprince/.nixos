@@ -19,18 +19,55 @@ in
       default = true;
       description = "Whether to start OpenSnitch daemon automatically at boot (multi-user target).";
     };
+
+    # Persistent state (rules + optional runtime config we manage).
+    stateDir = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/lib/opensnitch";
+      description = "Persistent state directory for OpenSnitch.";
+    };
+
+    rulesDir = lib.mkOption {
+      type = lib.types.str;
+      default = "${cfg.stateDir}/rules";
+      description = "Persistent directory for OpenSnitch rules.";
+    };
+
+    configDir = lib.mkOption {
+      type = lib.types.str;
+      default = "/etc/opensnitchd";
+      description = "Persistent configuration directory for OpenSnitch daemon.";
+    };
+
+    configFile = lib.mkOption {
+      type = lib.types.str;
+      default = "${cfg.configDir}/default-config.json";
+      description = "Config file path passed to opensnitchd via --config-file.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [ cfg.package ];
 
-    # Prefer upstream NixOS module if it exists in your nixpkgs.
-    # If not present, the fallback unit below will be used.
-    services.opensnitch.enable = lib.mkDefault true;
+    # Ensure directories / config exist and persist between rebuilds.
+    systemd.tmpfiles.rules = [
+      "d ${cfg.stateDir} 0755 root root -"
+      "d ${cfg.rulesDir} 0755 root root -"
+      "d ${cfg.configDir} 0755 root root -"
 
-    systemd.services.opensnitchd = lib.mkIf (!config.services.opensnitch.enable) {
-      description = "OpenSnitch daemon (fallback unit)";
-      documentation = [ "https://github.com/evilsocket/opensnitch" ];
+      # Seed default config into /etc if you haven't created your own yet.
+      # (If the file already exists, tmpfiles won't overwrite it.)
+      "C ${cfg.configFile} 0644 root root - ${cfg.package}/etc/opensnitchd/default-config.json"
+    ];
+
+    # We fully own the unit to avoid fragment/drop-in composition issues and
+    # ensure a single authoritative ExecStart (systemd refuses multiple ExecStart=
+    # lines for Type=simple services).
+    services.opensnitch.enable = lib.mkForce false;
+
+    systemd.services.opensnitchd = {
+      description = "Application firewall OpenSnitch";
+      documentation = [ "https://github.com/evilsocket/opensnitch/wiki" ];
 
       wantedBy = lib.mkIf cfg.startAtBoot [ "multi-user.target" ];
       after = [ "network-online.target" ];
@@ -38,9 +75,10 @@ in
 
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${cfg.package}/bin/opensnitchd";
-        Restart = "on-failure";
-        RestartSec = "2s";
+        ExecStart = "${cfg.package}/bin/opensnitchd --config-file ${cfg.configFile} -rules-path ${cfg.rulesDir}";
+        Restart = "always";
+        RestartSec = "30";
+        TimeoutStopSec = "10";
 
         # OpenSnitch needs privileges to interface with firewall/packet filtering.
         User = "root";

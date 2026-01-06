@@ -21,9 +21,6 @@
     ../../modules/nixos/security/howdy.nix
     ../../modules/nixos/services.nix
 
-    # Fonts (system-wide fontconfig + Nerd Fonts + optional external font dir)
-    ../../modules/nixos/fonts.nix
-
     # Hardware permissions (FlexBar USB access)
     ../../modules/nixos/hardware/flexbar.nix
 
@@ -60,11 +57,11 @@
     videoDrivers = [ "amdgpu" ];
     defaultSession = "plasma";
 
-    # Preserve the previous behavior: SDDM on Wayland by default
+    # Revert SDDM to X11 to avoid flickering (likely caused by Wayland VRR)
     sddm = {
       enable = true;
-      wayland = true;
-      forceWaylandDisplayServer = true;
+      wayland = false;
+      forceWaylandDisplayServer = false;
     };
 
     xkb = {
@@ -132,20 +129,6 @@
       #   remoteProgram = "C:\\Program Files\\Affinity\\Photo 2\\Photo.exe";
       # };
     };
-  };
-
-  # ===========================================================================
-  # Fonts
-  # ===========================================================================
-  my.fonts = {
-    enable = true;
-
-    # You asked for "all Nerd Fonts" on desktop. This is large.
-    nerdFonts = null;
-
-    # Enable external font directory lookup (useful for fonts on /mnt/*).
-    enableExternalDir = true;
-    externalDir = "/mnt/Zeal/Resources/Fonts";
   };
 
   # ===========================================================================

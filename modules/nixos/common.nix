@@ -54,9 +54,13 @@
   };
 
   # GC defaults
+  #
+  # Keep GC off the critical boot path by running it on a schedule (via timer),
+  # and add jitter so it doesn't always kick in at the same time.
   nix.gc = lib.mkDefault {
     automatic = true;
     dates = "weekly";
+    randomizedDelaySec = "45min";
     options = "--delete-older-than 7d";
   };
 

@@ -15,6 +15,10 @@ let
       StartupNotify=${if startupNotify then "true" else "false"}
     '';
 
+  # Run in the background, don't inherit startup activation, and hide from UI lists.
+  #
+  # Note: This does not guarantee an app is minimized; it only launches it in a way
+  # that tends to avoid focus-stealing and keeps it out of autostart UIs.
   mkAutostartDesktopHidden = { name, exec, startupNotify ? false }:
     ''
       [Desktop Entry]
@@ -25,6 +29,130 @@ let
       StartupNotify=${if startupNotify then "true" else "false"}
       NoDisplay=true
     '';
+
+  # Wayland-safe post-login "close to tray" helper (using kdotool).
+  #
+  # Why: during Plasma Wayland startup, some apps (notably Electron/Qt) map/raise a window
+  # briefly even if you try to start them “hidden”. KWin rules can also be timing-sensitive.
+  #
+  # Strategy:
+  #   1) wait a short initial delay for the session + tray to fully come up
+  #   2) poll briefly for matching windows
+  #   3) close the window (apps configured for “close to tray” will hide into the tray)
+  #   4) write a small log so you can confirm which windows were acted on
+  mkPostLoginWindowHandlerScript = {
+    closeClasses ? [],
+    minimizeClasses ? [],
+    attempts ? 120,
+    sleepSeconds ? 0.5,
+    initialDelaySeconds ? 3,
+    closeDelaySeconds ? 1,
+    ...
+  }:
+    let
+      closeRegex = "(" + (lib.concatStringsSep "|" (map lib.escapeRegex closeClasses)) + ")";
+      minimizeRegex = "(" + (lib.concatStringsSep "|" (map lib.escapeRegex minimizeClasses)) + ")";
+      hasClose = closeClasses != [];
+      hasMinimize = minimizeClasses != [];
+    in
+      pkgs.writeShellScript "plasma6-post-login-window-handler" ''
+        set -eu
+
+        # Use fallback for XDG_STATE_HOME to prevent unbound variable errors
+        STATE_DIR="''${XDG_STATE_HOME:-$HOME/.local/state}/plasma6"
+        LOG_FILE="$STATE_DIR/post-login-window-handler.log"
+        KDOTOOL="${pkgs.kdotool}/bin/kdotool"
+
+        mkdir -p "$STATE_DIR" 2>/dev/null || true
+
+        log() {
+          echo "[$(date -Iseconds)] $*" >>"$LOG_FILE" 2>/dev/null || true
+        }
+
+        log "starting post-login window handler"
+        log "  initialDelaySeconds=${toString initialDelaySeconds} attempts=${toString attempts}"
+
+        # Give Plasma a moment to finish bringing up the panel/tray.
+        sleep ${toString initialDelaySeconds}
+
+        i=0
+        # Track processed classes to avoid re-closing windows if the user re-opens them
+        processed_classes=" "
+
+        while [ "$i" -lt ${toString attempts} ]; do
+
+          # 1. Close list
+          ${lib.optionalString hasClose ''
+          ids_c="$($KDOTOOL search --class '${closeRegex}' 2>/dev/null || true)"
+          batch_classes=""
+
+          if [ -n "''${ids_c}" ]; then
+            while IFS= read -r id; do
+              [ -n "''${id}" ] || continue
+
+              c="$($KDOTOOL getwindowclassname "''${id}" 2>/dev/null || true)"
+
+              # Check if class already processed globally
+              case "''${processed_classes}" in
+                *" ''${c} "*) continue ;;
+              esac
+
+              # Track class for update after this batch
+              batch_classes="''${batch_classes}''${c} "
+
+              t="$($KDOTOOL getwindowname "''${id}" 2>/dev/null || true)"
+              log "CLOSING id=''${id} class=''${c} title=''${t}"
+
+              sleep ${toString closeDelaySeconds}
+              $KDOTOOL windowclose "''${id}" >/dev/null 2>&1 || true
+            done <<< "''${ids_c}"
+
+            # Update processed classes
+            processed_classes="''${processed_classes}''${batch_classes}"
+          fi
+          ''}
+
+          # 2. Minimize list
+          ${lib.optionalString hasMinimize ''
+          ids_m="$($KDOTOOL search --class '${minimizeRegex}' 2>/dev/null || true)"
+          batch_classes=""
+
+          if [ -n "''${ids_m}" ]; then
+            while IFS= read -r id; do
+              [ -n "''${id}" ] || continue
+
+              c="$($KDOTOOL getwindowclassname "''${id}" 2>/dev/null || true)"
+
+              # Check if class already processed globally
+              case "''${processed_classes}" in
+                *" ''${c} "*) continue ;;
+              esac
+
+              # Track class for update after this batch
+              batch_classes="''${batch_classes}''${c} "
+
+              t="$($KDOTOOL getwindowname "''${id}" 2>/dev/null || true)"
+              log "MINIMIZING id=''${id} class=''${c} title=''${t}"
+
+              sleep ${toString closeDelaySeconds}
+              $KDOTOOL windowminimize "''${id}" >/dev/null 2>&1 || true
+            done <<< "''${ids_m}"
+
+            # Update processed classes
+            processed_classes="''${processed_classes}''${batch_classes}"
+          fi
+          ''}
+
+          i=$((i + 1))
+          sleep ${toString sleepSeconds}
+        done
+
+        log "finished post-login window handler"
+      '';
+
+  # Convenience helper for apps that don’t have a reliable “start minimized” flag.
+  mkAutostartDesktopTray = { name, exec }:
+    mkAutostartDesktopHidden { inherit name exec; startupNotify = false; };
 
   mkKsc = primary: defaultShortcut: description:
     "${primary},${defaultShortcut},${description}";
@@ -167,6 +295,28 @@ in
 
       mullvadVpn = {
         enable = lib.mkEnableOption "Autostart Mullvad VPN";
+      };
+
+      ferdium = {
+        enable = lib.mkEnableOption "Autostart Ferdium";
+        minimized = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Start minimized to tray.";
+        };
+      };
+    };
+
+    postLogin = {
+      closeClasses = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ "teams-for-linux" "mullvad vpn" "slack" "qpwgraph" "Ferdium" ];
+        description = "List of window classes to close (to tray) shortly after login.";
+      };
+      minimizeClasses = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "List of window classes to minimize shortly after login.";
       };
     };
 
@@ -331,7 +481,7 @@ in
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.onePassword.enable) {
         ".config/autostart/1password.desktop".text =
-          mkAutostartDesktop {
+          mkAutostartDesktopTray {
             name = "1Password";
             exec =
               "${pkgs._1password-gui}/bin/1password"
@@ -357,21 +507,20 @@ in
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.slack.enable) {
         ".config/autostart/slack.desktop".text =
-          mkAutostartDesktop {
-            name = "Slack (Hidden)";
-            # Some Electron apps ignore "start minimized" flags when launched via autostart unless
-            # executed through a shell; also avoid inheriting startup activation from autostart.
-            exec = "${pkgs.runtimeShell} -lc '${pkgs.slack}/bin/slack --start-minimized --disable-gpu >/dev/null 2>&1 & disown'";
+          mkAutostartDesktopHidden {
+            name = "Slack";
+            exec = "${pkgs.slack}/bin/slack";
             startupNotify = false;
           };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.teams.enable) {
         ".config/autostart/teams.desktop".text =
-          mkAutostartDesktop {
-            name = "Teams (Hidden)";
-            # Teams-for-Linux is Electron-based; enforce hidden startup by launching via a shell.
-            exec = "${pkgs.runtimeShell} -lc '${pkgs.teams-for-linux}/bin/teams-for-linux --hidden --disable-gpu >/dev/null 2>&1 & disown'";
+          mkAutostartDesktopHidden {
+            name = "Teams";
+            # Note: `teams-for-linux` is typically the Nixpkgs package name;
+            # keep this consistent with whatever you have installed.
+            exec = "${pkgs.teams-for-linux}/bin/teams-for-linux";
             startupNotify = false;
           };
       })
@@ -395,7 +544,7 @@ in
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.opensnitchUi.enable) {
         ".config/autostart/opensnitch-ui.desktop".text =
-          mkAutostartDesktop {
+          mkAutostartDesktopTray {
             name = "OpenSnitch UI";
             exec = "${pkgs.opensnitch-ui}/bin/opensnitch-ui";
           };
@@ -403,7 +552,7 @@ in
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.qpwgraph.enable) {
         ".config/autostart/qpwgraph.desktop".text =
-          mkAutostartDesktop {
+          mkAutostartDesktopTray {
             name = "qpwgraph";
             exec = "${pkgs.qpwgraph}/bin/qpwgraph";
           };
@@ -411,9 +560,19 @@ in
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.mullvadVpn.enable) {
         ".config/autostart/mullvad-vpn.desktop".text =
-          mkAutostartDesktop {
+          mkAutostartDesktopTray {
             name = "Mullvad VPN";
             exec = "${pkgs.mullvad-vpn}/bin/mullvad-vpn";
+          };
+      })
+
+      (lib.mkIf (cfg.autostart.enable && cfg.autostart.ferdium.enable) {
+        ".config/autostart/ferdium.desktop".text =
+          mkAutostartDesktopTray {
+            name = "Ferdium";
+            exec =
+              "${pkgs.ferdium}/bin/ferdium"
+              + lib.optionalString cfg.autostart.ferdium.minimized " --minimized";
           };
       })
 
@@ -426,6 +585,39 @@ in
     # -------------------------------------------------------------------------
     # Activation: write KDE config + global shortcuts
     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Wayland-safe post-login minimizer for apps that insist on showing a window
+    # during autostart (Electron/Qt apps commonly do this on Plasma Wayland).
+    # -------------------------------------------------------------------------
+    systemd.user.services.plasma6PostLoginWindowHandler =
+      lib.mkIf (cfg.postLogin.closeClasses != [] || cfg.postLogin.minimizeClasses != []) {
+        Unit = {
+          Description = "Plasma 6 post-login window handler for selected apps (Wayland)";
+          After = [ "graphical-session.target" ];
+          Wants = [ "graphical-session.target" ];
+        };
+        Service = {
+          Type = "simple";
+          ExecStart =
+            let
+              script =
+                mkPostLoginWindowHandlerScript {
+                  closeClasses = cfg.postLogin.closeClasses;
+                  minimizeClasses = cfg.postLogin.minimizeClasses;
+
+                  # Tuned for "apps appear late / tray initializes slowly".
+                  initialDelaySeconds = 5;
+                  closeDelaySeconds = 2;
+                  attempts = 60;
+                };
+            in
+              "${script}";
+        };
+        Install = {
+          WantedBy = [ "graphical-session.target" ];
+        };
+      };
+
     home.activation.configurePlasma6 =
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         set -e

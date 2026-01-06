@@ -77,6 +77,9 @@ position=4,4
 positionrule=3
 size=1323,1432
 sizerule=3
+# Autostart: start minimized, but allow raising/showing later
+minimize=true
+minimizerule=3
 wmclass=teams-for-linux
 wmclassmatch=1
 
@@ -84,6 +87,45 @@ wmclassmatch=1
 Description=Application settings for zen
 opacityinactiverule=2
 wmclass=zen
+wmclassmatch=1
+
+[Application settings for qpwgraph]
+Description=Application settings for qpwgraph
+# Autostart: start minimized, but allow raising/showing later
+minimize=true
+minimizerule=3
+wmclass=qpwgraph org.rncbc.qpwgraph
+wmclasscomplete=true
+wmclassmatch=1
+
+[Application settings for qpwgraph (mainwindow)]
+Description=Application settings for qpwgraph (mainwindow)
+# Match the actual window you see
+wmclass=qpwgraph
+wmclassmatch=1
+# Match a stable substring of the window title (e.g. "Default — A PipeWire Graph Qt GUI Interface")
+title=A PipeWire Graph Qt GUI Interface
+titlematch=2
+# Autostart: start minimized, but allow raising/showing later
+minimize=true
+minimizerule=3
+
+[Application settings for Mullvad VPN]
+Description=Application settings for Mullvad VPN
+# Autostart: start minimized, but allow raising/showing later
+minimize=true
+minimizerule=3
+wmclass=mullvad vpn Mullvad VPN
+wmclasscomplete=true
+wmclassmatch=1
+
+[Application settings for FlexDesigner]
+Description=Application settings for FlexDesigner
+# Autostart: start minimized, but allow raising/showing later
+minimize=true
+minimizerule=3
+wmclass=flex-designer FlexDesigner
+wmclasscomplete=true
 wmclassmatch=1
 
 [Settings for yakuake org.kde.yakuake]
@@ -95,13 +137,12 @@ wmclass=yakuake org.kde.yakuake
 wmclasscomplete=true
 wmclassmatch=1
 
-[Window settings for Slack]
-Description=Window settings for Slack
+[Application settings for Slack]
+Description=Application settings for Slack
+# Autostart: start minimized, but allow raising/showing later
+minimize=true
+minimizerule=3
 position=4,4
-positionrule=3
-size=1323,1432
-sizerule=3
-title=linkedin-engagement (Channel) - savages - Slack
 types=1
 wmclass=slack Slack
 wmclasscomplete=true
