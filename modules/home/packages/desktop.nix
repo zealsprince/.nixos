@@ -25,6 +25,7 @@ in
         ffmpeg-full
 
         # Essentials
+        libreoffice-still
         dropbox
         deluge
         tauon
