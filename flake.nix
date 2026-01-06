@@ -45,7 +45,6 @@
   outputs = { self, nixpkgs, lanzaboote, home-manager, ... }@inputs:
     let
       pkgs = import nixpkgs { system = "x86_64-linux"; config.allowUnfree = true; };
-      system = pkgs.stdenv.hostPlatform.system;
     in
     {
       # -----------------------------------------------------------------------
@@ -53,8 +52,6 @@
       # -----------------------------------------------------------------------
       nixosConfigurations = {
         ANDREW-DREAMREAPER = nixpkgs.lib.nixosSystem {
-          inherit system;
-
           # Pass inputs to modules so modules can reference flake inputs when needed
           specialArgs = { inherit inputs; };
 

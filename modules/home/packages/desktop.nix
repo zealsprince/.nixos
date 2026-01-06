@@ -46,7 +46,7 @@ in
         love
 
         # Creative tools
-        inputs.affinity-nix.packages.${pkgs.system}.v3
+        inputs.affinity-nix.packages.${pkgs.stdenv.hostPlatform.system}.v3
         blender-hip
         krita
         renoise
