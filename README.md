@@ -1,169 +1,94 @@
 # .nixos
 
-This repository is a **flake-based** Nix configuration that supports:
+This repository is a **flake-based** Nix configuration designed for modularity and reusability. It supports:
 
 - **NixOS** system configuration (per-host)
 - **Home Manager** user configuration (generic + portable)
 - A clean separation between:
-  - **host-specific** hardware/boot settings (e.g. Secure Boot, disk layout)
-  - **reusable** modules (desktop, programs, defaults)
-  - **WM-specific** Home Manager configuration (e.g. Plasma 6)
+  - **Host-specific** hardware/boot settings (e.g., Secure Boot, disk layout)
+  - **Reusable** modules (desktop environments, programs, defaults)
+  - **WM-specific** Home Manager configuration
 
-Goals:
+## Philosophy
 
-- enable reuse of the Home Manager profile on **any** machine (NixOS or “just nix”),
-- allow adding new NixOS hosts without inheriting dual-boot / Secure Boot specifics,
-- allow swapping window managers by switching a Home Manager module,
-- keep Nix config and “real dotfiles” cleanly separated.
+The goal of this structure is to keep the "OS" configuration cleanly separated from "User" configuration, while allowing code reuse across multiple machines.
 
-## Dotfiles vs Nix config
+1.  **Host-specific things live under `hosts/<hostname>/`**:
+    - Disk layout (`hardware-configuration.nix`)
+    - Bootloader settings
+    - Machine specific drivers/quirks
+    
+2.  **Reusable system modules live under `modules/nixos/`**:
+    - Desktop environments (e.g., Plasma)
+    - Program configurations (e.g., 1Password, Steam)
+    - Security modules (e.g., Howdy)
 
-This repo (`.nixos`) is the **NixOS + Home Manager** configuration.
+3.  **Home Manager is split by workflow**:
+    - Base config (`modules/home/base.nix`) works on any machine (NixOS or Linux/macOS with Nix).
+    - Window Manager configs (`modules/home/wm/`) contain desktop-specific autostarts and shortcuts.
 
-“Real dotfiles” (things you’d traditionally keep in `~/.zshrc`, `~/.tmux.conf`, `~/.vimrc`, and script bins) live in a separate repository:
+## Directory Layout
 
-- `zealsprince/.dotfiles`
-
-That repo is the source of truth for CLI dotfiles such as:
-- Zsh (`.zshrc`, `.p10k.zsh`, themes/plugins)
-- Tmux (`.tmux.conf`)
-- Vim (`.vimrc` and related assets)
-- user scripts (`bin/`)
-
-Home Manager in this repo links those files into place so they stay consistent across machines.
-
-## Directory layout
-
-```
-.nixos/
-  flake.nix                     # Flake outputs: NixOS + Home Manager
-  configuration.nix             # Legacy delegator (kept for familiarity)
-  home.nix                      # Home Manager entrypoint (composes modules)
-  packages.nix                  # Deprecated stub (packages live in a module now)
-
-  hosts/
-    ANDREW-DREAMREAPER/
-      default.nix               # Host entrypoint (imports host + reusable modules)
-      hardware-configuration.nix# Generated hardware config (host-specific)
-      boot-secureboot.nix       # Secure Boot / Lanzaboote / bootloader (host-specific)
-
-  modules/
-    nixos/
-      common.nix                # Reusable base NixOS defaults (locale, nix settings, etc.)
-      packages.nix              # Reusable system-wide packages
-      desktop/
-        plasma6.nix             # Plasma 6 + SDDM + audio/printing (option-driven)
-      programs/
-        1password.nix           # 1Password NixOS module config (option-driven)
-      security/
-        howdy.nix               # Howdy + PAM integration (option-driven)
-
-    home/
-      base.nix                  # Cross-platform HM (zsh/git/ssh/packages)
-      wm/
-        plasma6.nix             # Plasma-specific HM (autostart + kglobalshortcutsrc)
+```text
+.
+├── flake.nix                  # Entrypoint: defines inputs and outputs
+├── home.nix                   # Base Home Manager entrypoint
+├── home.desktop.nix           # Extended Home Manager profile for GUI/Desktop usage
+├── hosts/                     # Machine-specific configurations
+│   └── YOUR_HOSTNAME/
+│       ├── default.nix        # Host entrypoint (imports hardware + reusable modules)
+│       ├── hardware-configuration.nix # Generated hardware config
+│       └── boot.nix           # Bootloader / Secure Boot settings
+└── modules/
+    ├── nixos/                 # System-level modules
+    └── home/                  # User-level modules
 ```
 
-## Philosophy / separation of concerns
+## Getting Started
 
-### Host-specific things live under `hosts/<hostname>/`
-Examples:
-- disk layout, LUKS, filesystem UUIDs (`hardware-configuration.nix`)
-- Secure Boot and Lanzaboote config
-- GPU initrd modules
-- machine hostname (`networking.hostName`)
+### 1. External Dotfiles (Optional)
 
-This ensures new users can add their own host folder without inheriting bootloader or disk assumptions from existing hosts.
+This configuration is designed to work alongside a separate "vanilla" dotfiles repository (referenced as `inputs.dotfiles` in `flake.nix`). This allows you to keep your shell scripts, Zsh, and Vim configs portable to non-Nix systems.
 
-### Reusable system modules live under `modules/nixos/`
-Examples:
-- `nix.settings`, GC, locale defaults
-- desktop environment modules (Plasma 6)
-- program modules (1Password)
-- security modules (Howdy)
+- **If you have your own dotfiles repo**: Update the `dotfiles` input url in `flake.nix`.
+- **If you prefer Nix-native config**: Remove the `dotfiles` input and adjust `home.nix` to define files inline.
 
-These modules are meant to be sharable across all hosts.
+### 2. Customizing for Your User
 
-### Home Manager is split by WM
-- `modules/home/base.nix` is usable on non-NixOS too.
-- `modules/home/wm/plasma6.nix` contains KDE-specific bits:
-  - Autostart entries (`~/.config/autostart/*.desktop`)
-  - Plasma global shortcuts (`~/.config/kglobalshortcutsrc`)
-  - Yakuake sizing (`~/.config/yakuakerc`)
+1.  Open `flake.nix`.
+2.  Locate `homeConfigurations`.
+3.  Rename the user key (e.g., `zealsprince`) to your actual username.
+4.  Update `modules/home/base.nix` with your username, home directory, and git details.
 
-## Flake outputs
+### 3. Adding a New NixOS Host
 
-### NixOS outputs
-- `nixosConfigurations.ANDREW-DREAMREAPER`
+To add a new machine:
 
-This is a **host-scoped** system build that imports:
-- `hosts/ANDREW-DREAMREAPER/default.nix`
-- reusable modules under `modules/nixos/*`
-- external modules (Home Manager, Lanzaboote, Howdy, etc.)
+1.  Create a folder: `hosts/MY-MACHINE/`.
+2.  Generate hardware config:
+    ```bash
+    nixos-generate-config --show-hardware-config > hosts/MY-MACHINE/hardware-configuration.nix
+    ```
+3.  Create `hosts/MY-MACHINE/default.nix`. Import your hardware config and any shared modules you want (see existing hosts for examples).
+4.  Register the host in `flake.nix` under `nixosConfigurations`.
 
-### Home Manager outputs
-- `homeConfigurations.zealsprince`
+## Usage
 
-This is a **generic** user profile that can be applied on:
-- NixOS
-- non-NixOS systems that have the Nix package manager + Home Manager
+### NixOS (System Update)
+From the directory root:
 
-It uses `home.nix`, which composes:
-- `modules/home/base.nix`
-- `modules/home/wm/plasma6.nix`
-
-## How to use
-
-### NixOS (this host)
-From the `.nixos` directory:
-
-```
-sudo nixos-rebuild switch --flake .#YOUR-HOST
+```bash
+sudo nixos-rebuild switch --flake .#YOUR_HOSTNAME
 ```
 
-### Home Manager (generic, portable)
-On any machine with Nix + Home Manager installed:
+### Home Manager (User Update)
+Can be run on NixOS or any system with Nix installed:
 
+```bash
+home-manager switch --flake .#YOUR_USERNAME
 ```
-home-manager switch --flake .#zealsprince
-```
-
-This will update files in the user’s home directory (`~/.config`, `~/.local`, etc.).
-It does not “overwrite a machine”; it applies to the **current user account** where the command is executed.
-
-## Adding a new NixOS host
-
-1. Create a new host folder:
-   - `hosts/MY-HOST/`
-
-2. Add:
-   - `hosts/MY-HOST/hardware-configuration.nix` (generated by NixOS)
-   - `hosts/MY-HOST/default.nix` (imports reusable modules + your host config)
-   - optionally `hosts/MY-HOST/boot-secureboot.nix` (or other boot module)
-
-3. Add a new entry in `flake.nix` under `nixosConfigurations`.
-
-This keeps machine-specific settings isolated.
-
-## Switching WM / desktop environment
-
-Home Manager is structured so WM-specific behavior is isolated.
-
-- Base config: `modules/home/base.nix`
-- Plasma-specific: `modules/home/wm/plasma6.nix`
-
-To add a new WM, create a new module under:
-
-- `modules/home/wm/<wm>.nix`
-
-Then update `home.nix` to import and enable that module instead of Plasma 6.
 
 ## Notes
 
-### `configuration.nix`
-This file is retained as a lightweight delegator for people expecting it,
-but the "real" entrypoints are host modules under `hosts/<hostname>/default.nix`.
-
-### `packages.nix`
-This is deprecated and currently a stub to avoid breaking old imports.
-System packages are managed via `modules/nixos/packages.nix`.
+- **`configuration.nix`**: Kept as a legacy delegator but not actively used. The real entry points are in `hosts/*/default.nix`.
+- **Secure Boot**: This setup supports Lanzaboote. Ensure you generate keys and enroll them if you enable the secure boot module on a host.
