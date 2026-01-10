@@ -33,6 +33,7 @@ in
         deluge
         tauon
         opensnitch-ui
+        syncthing
         # squirreldisk
 
         # Hate it but I need it
@@ -52,10 +53,11 @@ in
 
         # Creative tools
         inputs.affinity-nix.packages.${pkgs.stdenv.hostPlatform.system}.v3
+        darktable
         blender-hip
         krita
         renoise
-        kdePackages.kdenlive
+        handbrake
         davinci-resolve
 
         # Social & Work
@@ -70,9 +72,11 @@ in
         obs-studio
 
         # Gaming & Wine
+        heroic
         lutris
         prismlauncher
         gamescope
+        mangohud
       ])
       ++ cfg.packages;
   };

@@ -36,5 +36,7 @@
     gnused
     ed
     rsync
+    fzf
+    zoxide
   ];
 }
