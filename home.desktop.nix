@@ -31,17 +31,10 @@
   my.home.wm.plasma6 = {
     enable = true;
 
-    kwinRules = {
-      enable = true;
-      rulesFile = ./hosts/ANDREW-DREAMREAPER/layout.kwinrule;
-    };
-
     autostart = {
       enable = true;
 
       ckbNext.enable = true;
-
-      dropbox.enable = true;
 
       # Yakuake: autostart hidden (tray) and toggle via Ctrl+;
       yakuake = {

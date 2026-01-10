@@ -9,7 +9,7 @@
     ./boot.nix
 
     # Storage / mounts
-    ../../modules/nixos/storage/ntfs-mounts.nix
+    ../../modules/nixos/storage/auto-mounts.nix
 
     # Polkit rules (host-specific)
     ./polkit-udisks2.nix
@@ -132,11 +132,11 @@
   };
 
   # ===========================================================================
-  # Storage (host-specific NTFS automounts)
+  # Storage (host-specific automounts)
   # ===========================================================================
   # These mount on first access (systemd automount) and won't block boot.
   # Device paths here use stable /dev/disk/by-uuid identifiers.
-  my.storage.ntfsMounts = {
+  my.storage.autoMounts = {
     enable = true;
 
     # Match ownership/permissions to your primary user.
@@ -153,25 +153,25 @@
       Strike = {
         device = "/dev/disk/by-label/Strike";
         mountPoint = "/mnt/Strike";
-        driver = "ntfs3";
+        fsType = "ext4";
       };
 
       Storage = {
         device = "/dev/disk/by-label/Storage";
         mountPoint = "/mnt/Storage";
-        driver = "ntfs3";
+        fsType = "exfat";
       };
 
       Recording = {
         device = "/dev/disk/by-label/Recording";
         mountPoint = "/mnt/Recording";
-        driver = "ntfs3";
+        fsType = "exfat";
       };
 
       Zeal = {
         device = "/dev/disk/by-label/Zeal";
         mountPoint = "/mnt/Zeal";
-        driver = "ntfs3";
+        fsType = "exfat";
       };
     };
   };
@@ -181,12 +181,18 @@
   # ===========================================================================
   # Keep per-machine tweaks here rather than in common modules.
 
+  # KDE Partition Manager
+  programs.partition-manager.enable = true;
+
   # Steam (host needs 32-bit OpenGL/Vulkan userspace for Steam + many games)
   programs.steam.enable = true;
 
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
+    extraPackages = with pkgs; [
+      rocmPackages.clr.icd
+    ];
   };
 
   # Ensure the user exists on this host (can be moved to a reusable "profile"

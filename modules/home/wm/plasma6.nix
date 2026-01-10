@@ -163,71 +163,7 @@ let
   mkKsc = primary: defaultShortcut: description:
     "${primary},${defaultShortcut},${description}";
 
-  # Parse section headers like:
-  #   [Application settings for Alacritty]
-  # into stable KWin rule IDs. We store:
-  #   [General]
-  #   count=...
-  #   rules=rule1,rule2,...
-  # and rewrite each rule section header to [<id>]
-  #
-  # This makes KWin actually list/manage the rules in the UI.
-  ruleIdFromHeader =
-    header:
-    let
-      # strip surrounding [ ]
-      inner = lib.removeSuffix "]" (lib.removePrefix "[" header);
-      # slugify
-      slug =
-        lib.toLower
-          (builtins.replaceStrings
-            [ " " "/" ":" "," "." "(" ")" "[" "]" "{" "}" "'" "\"" ]
-            [ "-" "-" "-" "-" "-" ""  ""  ""  ""  ""  ""  ""  "" ]
-            inner);
-      compact = lib.replaceStrings [ "--" "---" "----" "-----" ] [ "-" "-" "-" "-" ] slug;
-    in
-      "rule-${compact}";
 
-  generateKwinRulesRc =
-    rulesText:
-    let
-      isHeader = line: lib.hasPrefix "[" line && lib.hasSuffix "]" line;
-      lines = lib.splitString "\n" rulesText;
-
-      headers = builtins.filter isHeader lines;
-      ids = map ruleIdFromHeader headers;
-
-      # Rewrite headers to ids in order; keep all other lines unchanged.
-      rewritten =
-        builtins.concatStringsSep "\n"
-          (lib.foldl'
-            (acc: line:
-              if isHeader line then
-                let
-                  idx = acc.idx;
-                  id = builtins.elemAt ids idx;
-                in
-                  {
-                    idx = idx + 1;
-                    out = acc.out ++ [ "[${id}]" ];
-                  }
-              else
-                {
-                  idx = acc.idx;
-                  out = acc.out ++ [ line ];
-                })
-            { idx = 0; out = [ ]; }
-            lines).out;
-
-      general =
-        ''
-          [General]
-          count=${toString (builtins.length ids)}
-          rules=${lib.concatStringsSep "," ids}
-
-        '';
-    in
-      general + rewritten;
 in
 {
   options.my.home.wm.plasma6 = {
@@ -280,10 +216,6 @@ in
 
       teams = {
         enable = lib.mkEnableOption "Autostart Teams (silent)";
-      };
-
-      dropbox = {
-        enable = lib.mkEnableOption "Autostart Dropbox";
       };
 
       flexDesigner = {
@@ -444,25 +376,6 @@ in
       default = true;
       description = "Whether to try restarting Plasma's global shortcut daemon after writing shortcuts.";
     };
-
-    kwinRules = {
-      enable = lib.mkEnableOption "Manage KWin window rules via ~/.config/kwinrulesrc.";
-
-      rulesFile = lib.mkOption {
-        type = lib.types.nullOr lib.types.path;
-        default = null;
-        description = ''
-          Path to a KWin rules file exported from the KWin UI (*.kwinrule) or an ini-like rules file.
-
-          This module will IMPORT it by converting it into a real `kwinrulesrc` (adds `[General]`
-          with a rules index and rewrites section headers to stable rule IDs), so the rules
-          show up inside System Settings → Window Management → Window Rules.
-
-          Recommended usage: keep a host-specific file under `hosts/<HOST>/.../*.kwinrule`
-          and point this option at it.
-        '';
-      };
-    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -535,14 +448,6 @@ in
           };
       })
 
-      (lib.mkIf (cfg.autostart.enable && cfg.autostart.dropbox.enable) {
-        ".config/autostart/dropbox.desktop".text =
-          mkAutostartDesktop {
-            name = "Dropbox";
-            exec = "${pkgs.dropbox}/bin/dropbox";
-          };
-      })
-
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.flexDesigner.enable) {
         ".config/autostart/flex-designer.desktop".text =
           mkAutostartDesktopHidden {
@@ -594,10 +499,7 @@ in
           };
       })
 
-      (lib.mkIf (cfg.kwinRules.enable && cfg.kwinRules.rulesFile != null) {
-        ".config/kwinrulesrc".text =
-          generateKwinRulesRc (builtins.readFile cfg.kwinRules.rulesFile);
-      })
+
     ];
 
     # -------------------------------------------------------------------------
@@ -701,11 +603,7 @@ in
           ${kwriteconfig} --file yakuakerc --group Window --key X ${toString cfg.yakuake.x}
         ''}
 
-        ${lib.optionalString (cfg.kwinRules.enable && cfg.kwinRules.rulesFile != null) ''
-          # Best-effort: prompt KWin to reload rules by restarting it.
-          # Service names vary across setups (Wayland vs X11, packaging differences).
-          systemctl --user try-restart plasma-kwin_wayland.service plasma-kwin_x11.service kwin_wayland.service kwin_x11.service >/dev/null 2>&1 || true
-        ''}
+
 
         ${lib.optionalString cfg.restartKglobalAccel ''
           # Apply shortcut changes (service names vary slightly across Plasma setups).

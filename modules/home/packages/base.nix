@@ -10,7 +10,6 @@ let
     gh
     yt-dlp
     awscli2
-    powershell
     terraform
 
     # Languages that come with global packages

@@ -35,5 +35,6 @@
     gawk
     gnused
     ed
+    rsync
   ];
 }

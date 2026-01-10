@@ -37,7 +37,7 @@ in
 {
   # User-scoped fonts (Home Manager)
   my.home.fonts = {
-    enable = true;
+    # enable = true;
     # Keep the set small (DejaVu + a few nice defaults + emoji).
     # Override here if you want to add/remove fonts later.
     # packages = with pkgs; [ dejavu_fonts liberation_ttf freefont_ttf noto-fonts-color-emoji ];
@@ -54,6 +54,8 @@ in
     # Keep the default (portable) Home Manager profile CLI-only.
     # Desktop/WM-specific modules should be imported by a separate desktop profile.
     ./modules/home/packages/base.nix
+
+    ./modules/home/powershell.nix
   ];
 
   # Allow Home Manager's Zsh module (completions/plugins), while still using your dotfiles

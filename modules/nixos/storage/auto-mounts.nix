@@ -6,10 +6,9 @@ let
     mkOption
     mkIf
     mkMerge
-    types
-    escapeSystemdPath;
+    types;
 
-  cfg = config.my.storage.ntfsMounts;
+  cfg = config.my.storage.autoMounts;
 
   # Build systemd mount option strings for a given mount point.
   # We use systemd.automount so the drives don't block boot and will mount on first access.
@@ -18,37 +17,33 @@ let
     "x-systemd.idle-timeout=${toString cfg.idleTimeoutSec}s"
     "x-systemd.device-timeout=${toString cfg.deviceTimeoutSec}s"
     "x-systemd.mount-timeout=${toString cfg.mountTimeoutSec}s"
-    "x-systemd.after=local-fs-pre.target"
     "x-systemd.wanted-by=multi-user.target"
-    "x-systemd.requires=local-fs-pre.target"
     "nofail"
   ] ++ lib.optionals cfg.allowUserMount [
     "user"
   ];
 
-  mkNtfsFileSystem = name: m:
+  mkAutoFileSystem = name: m:
     let
       mountPoint = m.mountPoint;
-      # In NixOS, "ntfs3" uses the in-kernel driver, while "ntfs" commonly maps to ntfs-3g.
-      # We default to "ntfs3" for performance/features on modern kernels, but allow override.
-      fsType =
-        if m.driver == "ntfs3" then "ntfs3" else "ntfs";
+      fsType = m.fsType;
 
-      # Recommended baseline options for "data" drives:
-      # - uid/gid: make the files owned by a user/group on Linux side
-      # - umask: permissions mask for files/dirs on NTFS
-      # - windows_names: disallow characters illegal on Windows
-      # - big_writes: useful for ntfs-3g; ignored by ntfs3
+      # Identify if filesystem is non-POSIX (FAT/NTFS/exFAT) and needs permission mapping.
+      isNonPosix = builtins.elem fsType [ "vfat" "exfat" "ntfs" "ntfs3" ];
+
+      # Recommended baseline options for typical "data" drives.
       #
-      # Note: NTFS doesn't support Unix permissions. Ownership/perm mapping is via mount options.
+      # Notes:
+      # - Most non-POSIX filesystems (NTFS, exFAT, FAT) don't support Unix permissions;
+      #   ownership/permissions are mapped via mount options.
+      # - "windows_names" is only meaningful for NTFS.
       baseOptions =
-        [
+        lib.optionals isNonPosix [
           "uid=${toString cfg.ownerUid}"
           "gid=${toString cfg.ownerGid}"
           "umask=${cfg.umask}"
-          "windows_names"
         ]
-        ++ lib.optionals (m.driver == "ntfs-3g") [ "big_writes" ]
+        ++ lib.optionals (fsType == "ntfs3" || fsType == "ntfs") [ "windows_names" ]
         ++ lib.optionals (m.readOnly) [ "ro" ]
         ++ mkSystemdUnitOptions mountPoint
         ++ m.extraOptions;
@@ -61,17 +56,18 @@ let
 
         # Make the mount available during normal boot ordering.
         neededForBoot = false;
+        noCheck = true;
       };
     };
 
-  # Ensure we have the right userspace helper available if the user selects ntfs-3g.
-  # (The kernel ntfs3 driver doesn't need userspace helpers.)
-  needsNtfs3g = lib.any (m: m.driver == "ntfs-3g") (lib.attrValues cfg.mounts);
+  # Userspace helpers (only needed for some fsTypes).
+  needsNtfs3g = lib.any (m: m.fsType == "ntfs") (lib.attrValues cfg.mounts);
+  needsExfatProgs = lib.any (m: m.fsType == "exfat") (lib.attrValues cfg.mounts);
 
 in
 {
-  options.my.storage.ntfsMounts = {
-    enable = mkEnableOption "reusable, host-defined NTFS auto-mounts (systemd automount)";
+  options.my.storage.autoMounts = {
+    enable = mkEnableOption "reusable, host-defined auto-mounts (systemd automount)";
 
     mounts = mkOption {
       type = types.attrsOf (types.submodule ({ name, ... }: {
@@ -80,7 +76,7 @@ in
           device = mkOption {
             type = types.str;
             example = "/dev/disk/by-uuid/1234-ABCD";
-            description = "Block device path for the NTFS filesystem.";
+            description = "Block device path for the filesystem.";
           };
 
           mountPoint = mkOption {
@@ -89,13 +85,18 @@ in
             description = "Where to mount the filesystem.";
           };
 
-          driver = mkOption {
-            type = types.enum [ "ntfs3" "ntfs-3g" ];
+          fsType = mkOption {
+            type = types.str;
             default = "ntfs3";
+            example = "exfat";
             description = ''
-              Which driver to use:
+              Filesystem type for this mount (maps to `fileSystems.<mountPoint>.fsType`).
+
+              Common values:
               - "ntfs3": in-kernel NTFS driver (recommended on modern kernels)
-              - "ntfs-3g": FUSE driver (requires pkgs.ntfs3g)
+              - "ntfs": ntfs-3g userspace driver (requires pkgs.ntfs3g)
+              - "exfat": exFAT (requires pkgs.exfatprogs)
+              - "ext4", "xfs", "btrfs": Linux-native filesystems (usually no extra packages needed)
             '';
           };
 
@@ -119,36 +120,36 @@ in
         Storage = {
           device = "/dev/disk/by-uuid/DEADBEEF-0000-1111-2222-CAFEBABE0000";
           mountPoint = "/mnt/Storage";
-          driver = "ntfs3";
+          fsType = "ntfs3";
         };
       };
 
       description = ''
-        Host-defined NTFS mounts.
+        Host-defined auto-mounts.
 
         Define each mount as an attribute; the key is only used for readability.
         Use stable device identifiers (e.g. /dev/disk/by-uuid/*) rather than /dev/sdX.
       '';
     };
 
-    # Ownership and permission mapping defaults for NTFS.
+    # Ownership and permission mapping defaults for non-POSIX filesystems.
     # These should generally match your primary user and group.
     ownerUid = mkOption {
       type = types.int;
       default = 1000;
-      description = "Default uid used for NTFS ownership mapping (uid=...).";
+      description = "Default uid used for ownership mapping (uid=...).";
     };
 
     ownerGid = mkOption {
       type = types.int;
       default = 100;
-      description = "Default gid used for NTFS ownership mapping (gid=...).";
+      description = "Default gid used for ownership mapping (gid=...).";
     };
 
     umask = mkOption {
       type = types.str;
       default = "0002";
-      description = "Default umask for NTFS mounts (umask=...).";
+      description = "Default umask for mounts (umask=...).";
     };
 
     allowUserMount = mkOption {
@@ -187,12 +188,18 @@ in
 
     # Add the fileSystems entries.
     {
-      fileSystems = mkMerge (lib.mapAttrsToList mkNtfsFileSystem cfg.mounts);
+      fileSystems = mkMerge (lib.mapAttrsToList mkAutoFileSystem cfg.mounts);
     }
 
-    # If explicitly using ntfs-3g, ensure the helper is present.
+    # Ensure kernel support and userspace tools are available.
     (mkIf needsNtfs3g {
+      boot.supportedFilesystems = [ "ntfs" ];
       environment.systemPackages = [ pkgs.ntfs3g ];
+    })
+
+    (mkIf needsExfatProgs {
+      boot.supportedFilesystems = [ "exfat" ];
+      environment.systemPackages = [ pkgs.exfatprogs ];
     })
   ]);
 }

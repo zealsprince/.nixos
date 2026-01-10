@@ -25,19 +25,23 @@ in
         ffmpeg-full
 
         # Essentials
+        resources
+        obsidian
         libreoffice-still
-        dropbox
+        maestral
+        maestral-gui
         deluge
         tauon
         opensnitch-ui
+        # squirreldisk
 
         # Hate it but I need it
         spotify
 
         # Development tools
         zed-editor-fhs
+        bruno
         vscode
-        obsidian
         firefox-devedition
         ungoogled-chromium
         dbeaver-bin

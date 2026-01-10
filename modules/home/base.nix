@@ -44,8 +44,14 @@ let
   # NOTE: `pkgs.zsh-github-copilot` is not present in this nixpkgs; avoid referencing it.
   githubCopilotPlugin = null;
 
-  # NOTE: `pkgs.zsh_codex` is not present in this nixpkgs; avoid referencing it.
-  codexPlugin = null;
+  codexPlugin = "${pkgs.fetchFromGitHub {
+    owner = "tom-doerr";
+    repo = "zsh_codex";
+    rev = "6ede649f1260abc5ffe91ef050d00549281dc461";
+    sha256 = "1vllp87ya30jyq13x9qwg30mklh17h1648na0qmi742sn09bwycv";
+  }}";
+
+  codexPython = pkgs.python3.withPackages (ps: [ ps.openai ]);
 in
 {
   options.my.home.base = {
@@ -243,6 +249,8 @@ in
       ZDOTFILES_ZSH_P10K_THEME = p10kTheme;
       ZDOTFILES_ZSH_AUTOSUGGESTIONS = autosuggestionsPlugin;
       ZDOTFILES_ZSH_SYNTAX_HIGHLIGHTING = syntaxHighlightingPlugin;
+      ZDOTFILES_ZSH_CODEX = codexPlugin;
+      ZSH_CODEX_PYTHON = "${codexPython}/bin/python3";
 
       # Make nix-direnv use the flake-based fast path by default when possible.
       # (Safe even if you don't use it in a given directory.)
