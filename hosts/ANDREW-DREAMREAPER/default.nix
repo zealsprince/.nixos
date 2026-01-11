@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, ... }:
+{ config, lib, pkgs, inputs, pkgs-unstable, ... }:
 
 {
   imports = [
@@ -37,9 +37,28 @@
     ../../modules/nixos/packages/custom.nix
   ];
 
+  # Fix for broken Zed Editor tests blocking rebuilds
+  nixpkgs.overlays = [
+    (final: prev: {
+      zed-editor = prev.zed-editor.overrideAttrs (old: {
+        doCheck = false;
+      });
+    })
+  ];
+
   my.services.openlinkhub.enable = true;
   my.services.opensnitch.enable = true;
   my.services.mullvad.enable = true;
+  my.services.ollama = {
+    enable = true;
+    package = pkgs-unstable.ollama-rocm;
+    acceleration = "rocm";
+
+    # RX 6800 XT (RDNA2 / gfx1030): some ROCm stacks need an explicit override.
+    extraEnvironment = {
+      HSA_OVERRIDE_GFX_VERSION = "10.3.0";
+    };
+  };
 
   # ===========================================================================
   # Host identity / networking (host-specific)
@@ -180,6 +199,9 @@
   # Host-local overrides / quirks
   # ===========================================================================
   # Keep per-machine tweaks here rather than in common modules.
+
+  # Enable nix-ld to support Zed LSPs and other downloaded binaries
+  programs.nix-ld.enable = true;
 
   # KDE Partition Manager
   programs.partition-manager.enable = true;

@@ -53,12 +53,15 @@ in
 
         # Creative tools
         inputs.affinity-nix.packages.${pkgs.stdenv.hostPlatform.system}.v3
+        pureref
         darktable
         blender-hip
         krita
-        renoise
         handbrake
         davinci-resolve
+        audacity
+        vcv-rack
+        renoise
 
         # Social & Work
         hexchat

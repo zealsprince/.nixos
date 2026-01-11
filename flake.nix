@@ -5,6 +5,9 @@
     # NixOS official package source, using the 25.11 branch
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
 
+    # Unstable for bleeding-edge packages (e.g. newer Ollama)
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+
     _1password-shell-plugins.url = "github:1Password/shell-plugins";
 
     # Home Manager, following the same release version
@@ -42,9 +45,10 @@
     };
   };
 
-  outputs = { self, nixpkgs, lanzaboote, home-manager, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, lanzaboote, home-manager, ... }@inputs:
     let
       pkgs = import nixpkgs { system = "x86_64-linux"; config.allowUnfree = true; };
+      pkgs-unstable = import nixpkgs-unstable { system = "x86_64-linux"; config.allowUnfree = true; };
     in
     {
       # -----------------------------------------------------------------------
@@ -53,7 +57,10 @@
       nixosConfigurations = {
         ANDREW-DREAMREAPER = nixpkgs.lib.nixosSystem {
           # Pass inputs to modules so modules can reference flake inputs when needed
-          specialArgs = { inherit inputs; };
+          specialArgs = {
+            inherit inputs;
+            inherit pkgs-unstable;
+          };
 
           modules = [
             # Host entrypoint (imports hardware + host boot + reusable modules)

@@ -15,5 +15,6 @@
     ./services/openlinkhub.nix
     ./services/opensnitch.nix
     ./services/mullvad.nix
+    ./services/ollama.nix
   ];
 }

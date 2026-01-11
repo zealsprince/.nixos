@@ -22,8 +22,7 @@ in
   config = lib.mkIf cfg.enable {
     home.packages =
       (with pkgs; [
-        # AMD GPU specific: ROCm build of Ollama (local LLM runtime)
-        ollama-rocm
+
       ])
       ++ cfg.packages;
   };
