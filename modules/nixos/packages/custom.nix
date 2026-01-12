@@ -16,10 +16,12 @@
 
 let
   flex-designer = pkgs.callPackage ../../../pkgs/flex-designer { };
+  invoke-ai = pkgs.callPackage ../../../pkgs/invoke-ai { };
 in
 {
   environment.systemPackages = [
     flex-designer
+    invoke-ai
 
     # FlexDesigner runtime deps (per upstream "apt-get install ..."):
     # - python3-pyaudio -> Python + PyAudio

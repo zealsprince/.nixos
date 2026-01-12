@@ -214,8 +214,11 @@
     enable32Bit = true;
     extraPackages = with pkgs; [
       rocmPackages.clr.icd
+      rocmPackages.hiprt
     ];
   };
+
+  environment.systemPackages = [ pkgs.rocmPackages.rocminfo ];
 
   # Ensure the user exists on this host (can be moved to a reusable "profile"
   # module later if multi-user support is needed).
