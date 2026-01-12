@@ -181,10 +181,10 @@
         fsType = "exfat";
       };
 
-      Recording = {
-        device = "/dev/disk/by-label/Recording";
-        mountPoint = "/mnt/Recording";
-        fsType = "exfat";
+      Footage = {
+        device = "/dev/disk/by-label/Footage";
+        mountPoint = "/mnt/Footage";
+        fsType = "xfs";
       };
 
       Zeal = {
