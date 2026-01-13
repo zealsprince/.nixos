@@ -39,7 +39,7 @@ in
         plezy
         opensnitch-ui
         syncthing
-        lxappearance
+        # lxappearance
         # squirreldisk
 
         # Hate it but I need it

@@ -26,9 +26,9 @@
     ../virtualisation/winapps.nix
   ];
 
-  services.udev.packages = with pkgs; [
-    headsetcontrol
-  ];
+  # services.udev.packages = with pkgs; [
+  #   headsetcontrol
+  # ];
 
   environment.systemPackages =
     (with pkgs; [
@@ -37,7 +37,7 @@
         cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DUSE_DBUS_MENU=0" ];
       }))
       openlinkhub
-      headsetcontrol
+      # headsetcontrol
 
       # Media / utilities commonly expected on desktop
       mpv
