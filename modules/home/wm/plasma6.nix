@@ -424,7 +424,7 @@ in
         ".config/autostart/discord.desktop".text =
           mkAutostartDesktop {
             name = "Discord";
-            exec = "${pkgs.discord}/bin/discord --start-minimized";
+            exec = "${pkgs.discord}/bin/discord --start-minimized --enable-blink-features=MiddleClickAutoscroll";
           };
       })
 

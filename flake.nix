@@ -37,6 +37,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # mio-19 NUR (contains pkgs/plezy)
+    mio19-nurpkgs = {
+      url = "github:mio-19/nurpkgs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Real dotfiles (Zsh/Vim/Tmux/scripts). Kept separate from Nix config.
     # Use the remote GitHub repo so it works on any machine and is pinned via flake.lock.
     dotfiles = {

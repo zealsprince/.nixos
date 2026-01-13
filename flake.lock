@@ -287,6 +287,26 @@
         "type": "github"
       }
     },
+    "mio19-nurpkgs": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1768315109,
+        "narHash": "sha256-1MD+oBv8vvMbD5mhACjSkHevoCRoKNx/1PDNABQOrWI=",
+        "owner": "mio-19",
+        "repo": "nurpkgs",
+        "rev": "cf2bed1d543135315a40dcf1fcc7e2b577bbbd88",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mio-19",
+        "repo": "nurpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1756035328,
@@ -489,6 +509,7 @@
         "home-manager": "home-manager",
         "kwin-effects-forceblur": "kwin-effects-forceblur",
         "lanzaboote": "lanzaboote",
+        "mio19-nurpkgs": "mio19-nurpkgs",
         "nixpkgs": "nixpkgs_5",
         "nixpkgs-howdy": "nixpkgs-howdy",
         "nixpkgs-unstable": "nixpkgs-unstable",

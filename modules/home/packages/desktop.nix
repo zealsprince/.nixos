@@ -1,6 +1,10 @@
 { config, pkgs, lib, inputs, ... }:
 
 let
+  plezy = inputs.mio19-nurpkgs.packages.${pkgs.stdenv.hostPlatform.system}.plezy;
+in
+
+let
   cfg = config.my.home.packages.desktop;
 in
 {
@@ -32,8 +36,10 @@ in
         maestral-gui
         deluge
         tauon
+        plezy
         opensnitch-ui
         syncthing
+        lxappearance
         # squirreldisk
 
         # Hate it but I need it
@@ -80,6 +86,7 @@ in
         prismlauncher
         gamescope
         mangohud
+        osu-lazer-bin
       ])
       ++ cfg.packages;
   };

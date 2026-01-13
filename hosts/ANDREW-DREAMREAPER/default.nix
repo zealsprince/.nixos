@@ -1,6 +1,36 @@
 { config, lib, pkgs, inputs, pkgs-unstable, ... }:
 
+let
+  # On-device sidetone is exposed via ALSA as the "Sidetone" mixer control.
+  # We'll trigger a oneshot systemd service via udev whenever the Virtuoso USB
+  # device appears, and set the sidetone to max.
+  #
+  # We keep this host-local to avoid polluting other machines.
+  virtuosoSidetoneScript = pkgs.writeShellScript "virtuoso-sidetone" ''
+    set -euo pipefail
+
+    # Find the ALSA card number for the Virtuoso (USB order can change).
+    # /proc/asound/cards contains lines like:
+    #   4 [Gamin           ]: USB-Audio - CORSAIR VIRTUOSO Wireless Gamin
+    line="$(${pkgs.gnugrep}/bin/grep -m1 "VIRTUOSO" /proc/asound/cards || true)"
+    if [ -z "$line" ]; then
+      echo "Virtuoso ALSA card not found in /proc/asound/cards" >&2
+      exit 0
+    fi
+
+    card="$(${pkgs.gawk}/bin/awk '{print $1}' <<<"$line")"
+    if ! ${pkgs.gnugrep}/bin/grep -Eq '^[0-9]+$' <<<"$card"; then
+      echo "Failed to parse Virtuoso ALSA card number from line: $line" >&2
+      exit 1
+    fi
+
+    ${pkgs.alsa-utils}/bin/amixer -c "$card" sset Sidetone on
+    ${pkgs.alsa-utils}/bin/amixer -c "$card" sset Sidetone 23
+  '';
+in
+
 {
+
   imports = [
     ./hardware-configuration.nix
 
@@ -37,6 +67,31 @@
     ../../modules/nixos/packages/custom.nix
   ];
 
+  # ===========================================================================
+  # RAM disk (tmpfs)
+  # ===========================================================================
+  #
+  # This creates a 2GiB tmpfs at /ramdisk.
+  fileSystems."/ramdisk" = {
+    device = "tmpfs";
+    fsType = "tmpfs";
+    options = [
+      "size=2G"
+      "mode=1777"
+      "nosuid"
+      "nodev"
+      "noexec"
+    ];
+  };
+
+  # Ensure the mountpoint has the desired owner/group/mode after it's mounted.
+  #
+  # NOTE: `mode=...` in the tmpfs mount options affects the root of the tmpfs,
+  # but enforcing owner/group is best done via tmpfiles.
+  systemd.tmpfiles.rules = [
+    "d /ramdisk 1777 zealsprince users - -"
+  ];
+
   # Fix for broken Zed Editor tests blocking rebuilds
   nixpkgs.overlays = [
     (final: prev: {
@@ -70,6 +125,12 @@
   # Enable reusable module options for this host
   # ===========================================================================
   my.services.ckb-next.enable = true;
+
+  # Corsair Virtuoso: set hardware sidetone at login (via ALSA amixer)
+  my.services.virtuosoSidetone = {
+    enable = true;
+    level = 23;
+  };
 
   my.desktop.plasma6 = {
     enable = true;
@@ -258,6 +319,26 @@
   };
 
   services.blueman.enable = true;
+
+  # ===========================================================================
+  # Corsair Virtuoso - permissions + auto-apply sidetone on device arrival
+  # ===========================================================================
+  # - HeadsetControl talks to the headset via /dev/hidraw*; opening needs permissions.
+  # - Virtuoso sidetone is exposed via ALSA ("Sidetone" mixer control).
+  #   We want sidetone to be re-applied every time the device shows up (USB add/change).
+  services.udev.extraRules = lib.mkAfter ''
+    # Corsair Virtuoso Wireless (dongle mode): allow non-root hidraw access
+    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0a42", MODE="0660", GROUP="plugdev"
+    # Corsair Virtuoso USB (wired mode): allow non-root hidraw access
+    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="0a49", MODE="0660", GROUP="plugdev"
+
+    # Trigger sidetone apply whenever the Virtuoso USB device appears.
+    # (We match both dongle and wired modes.)
+    ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1b1c", ATTR{idProduct}=="0a42", TAG+="systemd", ENV{SYSTEMD_WANTS}+="virtuoso-sidetone.service"
+    ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1b1c", ATTR{idProduct}=="0a49", TAG+="systemd", ENV{SYSTEMD_WANTS}+="virtuoso-sidetone.service"
+  '';
+
+
 
   # Keep state version pinned per-host.
   system.stateVersion = "25.11";

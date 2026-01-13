@@ -16,5 +16,6 @@
     ./services/opensnitch.nix
     ./services/mullvad.nix
     ./services/ollama.nix
+    ./services/virtuoso-sidetone.nix
   ];
 }
