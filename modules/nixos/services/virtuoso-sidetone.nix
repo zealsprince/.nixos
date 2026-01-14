@@ -8,6 +8,8 @@ let
   head = "${pkgs.coreutils}/bin/head";
   awk = "${pkgs.gawk}/bin/awk";
   amixer = "${pkgs.alsa-utils}/bin/amixer";
+  sleep = "${pkgs.coreutils}/bin/sleep";
+  seq = "${pkgs.coreutils}/bin/seq";
 
   # Clamp sidetone level to Virtuoso's observed range (0-23).
   clampLevel = level:
@@ -20,20 +22,23 @@ let
   applyScriptFile = pkgs.writeShellScript "virtuoso-sidetone-apply" ''
     set -euo pipefail
 
-    line="$(${grep} -m1 "VIRTUOSO" /proc/asound/cards || true)"
-    if [ -z "$line" ]; then
-      echo "Virtuoso ALSA card not found in /proc/asound/cards" >&2
-      exit 0
-    fi
+    # Prefer targeting the ALSA card *id* (stable) rather than parsing card numbers
+    # or relying on /proc/asound/cards formatting/timing.
+    card="Gamin"
 
-    card="$(printf '%s\n' "$line" | ${awk} '{print $1}')"
-    if ! printf '%s' "$card" | ${grep} -Eq '^[0-9]+$'; then
-      echo "Failed to parse Virtuoso ALSA card number from line: $line" >&2
-      exit 1
-    fi
+    # ALSA control enumeration can lag behind the udev event that triggers this service.
+    # Wait briefly until the Sidetone control is available on the Virtuoso card.
+    for _ in $(${seq} 1 40); do
+      if ${amixer} -c "$card" sget Sidetone >/dev/null 2>&1; then
+        ${amixer} -c "$card" sset Sidetone on
+        ${amixer} -c "$card" sset Sidetone ${toString (clampLevel cfg.level)}
+        exit 0
+      fi
+      ${sleep} 0.25
+    done
 
-    ${amixer} -c "$card" sset Sidetone on
-    ${amixer} -c "$card" sset Sidetone ${toString (clampLevel cfg.level)}
+    echo "Virtuoso ALSA card '$card' Sidetone control not available (after waiting)" >&2
+    exit 0
   '';
 in
 {
