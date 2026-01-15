@@ -18,6 +18,7 @@ let
     pipx
     deno
     rustup
+    nil
 
     # Per-directory dev toolchain switching
     direnv
