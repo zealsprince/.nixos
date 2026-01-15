@@ -26,9 +26,15 @@ let
     # or relying on /proc/asound/cards formatting/timing.
     card="Gamin"
 
+    # If the headset isn't connected, exit quickly and cleanly so rebuilds don't fail.
+    if [ ! -d "/proc/asound/$card" ]; then
+      echo "Virtuoso ALSA card '$card' not present; skipping" >&2
+      exit 0
+    fi
+
     # ALSA control enumeration can lag behind the udev event that triggers this service.
     # Wait briefly until the Sidetone control is available on the Virtuoso card.
-    for _ in $(${seq} 1 40); do
+    for _ in $(${seq} 1 8); do
       if ${amixer} -c "$card" sget Sidetone >/dev/null 2>&1; then
         ${amixer} -c "$card" sset Sidetone on
         ${amixer} -c "$card" sset Sidetone ${toString (clampLevel cfg.level)}
@@ -37,7 +43,7 @@ let
       ${sleep} 0.25
     done
 
-    echo "Virtuoso ALSA card '$card' Sidetone control not available (after waiting)" >&2
+    echo "Virtuoso ALSA card '$card' present but Sidetone control not available (after waiting)" >&2
     exit 0
   '';
 in
@@ -65,7 +71,7 @@ in
       # Keep it robust: if the headset isn't present yet in ALSA, don't hang.
       serviceConfig = {
         Type = "oneshot";
-        TimeoutStartSec = 10;
+        TimeoutStartSec = 2;
         ExecStart = "${applyScriptFile}";
         StandardOutput = "journal";
         StandardError = "journal";

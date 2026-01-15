@@ -27,6 +27,17 @@ let
     ${pkgs.alsa-utils}/bin/amixer -c "$card" sset Sidetone on
     ${pkgs.alsa-utils}/bin/amixer -c "$card" sset Sidetone 23
   '';
+
+  # SDDM (Login Screen) background (Breeze theme)
+  #
+  # SDDM runs before any user session exists, so it cannot reliably read files
+  # from your home directory (e.g. /home/zealsprince/Desktop/background.jpg).
+  #
+  # Place `background.jpg` next to this file:
+  #   `.nixos/hosts/ANDREW-DREAMREAPER/background.jpg`
+  sddmBackgroundImage = pkgs.runCommand "sddm-background-image" { } ''
+    cp ${./background.jpg} $out
+  '';
 in
 
 {
@@ -37,6 +48,9 @@ in
     # Host-specific boot / platform details live here so they don't leak into
     # reusable configs or non-NixOS usage.
     ./boot.nix
+
+    # Encrypted swap (random key each boot)
+    ./swap.nix
 
     # Storage / mounts
     ../../modules/nixos/storage/auto-mounts.nix
@@ -114,6 +128,21 @@ in
       HSA_OVERRIDE_GFX_VERSION = "10.3.0";
     };
   };
+
+  # ===========================================================================
+  # SDDM (Login Screen) background (Breeze theme)
+  #
+  # SDDM runs before any user session exists, so it cannot reliably read files
+  # from your home directory (e.g. /home/zealsprince/Desktop/background.jpg).
+  #
+  # This installs a `theme.conf.user` override into the system profile so the
+  # default Breeze theme uses your chosen background.
+  #
+  # Notes:
+  # - Place `background.jpg` next to this file:
+  #   `.nixos/hosts/ANDREW-DREAMREAPER/background.jpg`
+  # - Rebuild after adding the file.
+  # ===========================================================================
 
   # ===========================================================================
   # Host identity / networking (host-specific)
@@ -279,7 +308,19 @@ in
     ];
   };
 
-  environment.systemPackages = [ pkgs.rocmPackages.rocminfo ];
+  environment.systemPackages = with pkgs; [
+    rocmPackages.rocminfo
+
+    # Printing/scanning utilities
+    system-config-printer
+    cups-filters
+
+    # SDDM (Login Screen) background override for Breeze theme.
+    (pkgs.writeTextDir "share/sddm/themes/breeze/theme.conf.user" ''
+      [General]
+      background = "${sddmBackgroundImage}"
+    '')
+  ];
 
   # Ensure the user exists on this host (can be moved to a reusable "profile"
   # module later if multi-user support is needed).
@@ -288,7 +329,7 @@ in
     description = "Andrew Lake";
 
     # libvirt: manage VMs from virt-manager without sudo
-    extraGroups = [ "networkmanager" "wheel" "video" "plugdev" "libvirtd" ];
+    extraGroups = [ "networkmanager" "wheel" "video" "plugdev" "libvirtd" "scanner" "lp" ];
 
     shell = pkgs.zsh;
   };
@@ -316,9 +357,75 @@ in
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
+    settings = {
+      Policy = {
+        # Enable all controllers when they are found. This includes
+        # adapters present on start as well as adapters that are plugged
+        # in later on. Defaults to 'true'.
+        AutoEnable = true;
+      };
+    };
   };
 
   services.blueman.enable = true;
+
+  # ===========================================================================
+  # Scanning (SANE) + Printing (CUPS) + network discovery ("Scan to PC")
+  # ===========================================================================
+  #
+  # Notes:
+  # - Scanning apps (Simple Scan, Skanlite, etc.) use SANE.
+  # - Many modern network scanners use eSCL (AirScan) and/or WSD discovery.
+  # - Printing is via CUPS; driver coverage is handled via gutenprint + vendor
+  #   drivers where available (Epson).
+  # - Avahi (mDNS/Bonjour) helps printers/scanners show up automatically on LAN.
+  #
+  # If you have a USB device, the relevant udev permissions are handled by the
+  # `scanner` and `lp` groups below.
+  hardware.sane.enable = true;
+
+  # Recommended backends:
+  # - `sane-airscan` for eSCL/AirScan network scanners (common for "scan to PC").
+  # - `hplipWithPlugin` is useful for many HP devices (optional but often needed).
+  hardware.sane.extraBackends = with pkgs; [
+    sane-airscan
+    hplipWithPlugin
+  ];
+
+  # Printing (CUPS)
+  services.printing = {
+    enable = true;
+
+    # Broad driver coverage:
+    # - gutenprint: large set of PPDs for many inkjets/lasers (incl. many Epson)
+    # - epson-escpr / epson-escpr2: Epson's ESC/P-R driver(s) for many models
+    drivers = with pkgs; [
+      gutenprint
+      epson-escpr
+      epson-escpr2
+    ];
+  };
+
+  # Optional but commonly needed GUI and tools (especially on KDE/Plasma) are
+  # included in the existing `environment.systemPackages` list above.
+
+  # Make sure your user can access scanners/printers.
+  # (Handled in the primary `users.users.zealsprince.extraGroups` definition above.)
+
+  # mDNS discovery for network printers/scanners (AirPrint/AirScan style)
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+  };
+
+  # If your host firewall is enabled, allow common discovery/scan-to-PC ports.
+  networking.firewall.allowedTCPPorts = [
+    5357 # WSD (Web Services on Devices)
+    8612 # eSCL (AirScan) - common
+  ];
+
+  # UDP 5353 is mDNS (Avahi); handled via `services.avahi.openFirewall = true`.
 
   # ===========================================================================
   # Corsair Virtuoso - permissions + auto-apply sidetone on device arrival
