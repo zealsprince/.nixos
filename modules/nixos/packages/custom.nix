@@ -1,4 +1,4 @@
-{ pkgs, lib ? pkgs.lib, ... }:
+{ pkgs, ... }:
 
 /*
   Host-only custom packages module (niche tooling)

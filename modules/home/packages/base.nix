@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   # We piggy-back on your existing "base HM profile" toggle so this module is a
@@ -18,6 +23,7 @@ let
     pipx
     deno
     rustup
+    nixd
     nil
 
     # Per-directory dev toolchain switching

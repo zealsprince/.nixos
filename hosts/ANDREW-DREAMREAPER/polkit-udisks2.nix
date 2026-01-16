@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ ... }:
 
 {
   # Allow mounting/unlocking drives from KDE/Dolphin "Devices" without a password prompt,

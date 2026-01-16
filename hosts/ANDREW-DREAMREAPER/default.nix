@@ -1,33 +1,11 @@
-{ config, lib, pkgs, inputs, pkgs-unstable, ... }:
+{
+  lib,
+  pkgs,
+  pkgs-unstable,
+  ...
+}:
 
 let
-  # On-device sidetone is exposed via ALSA as the "Sidetone" mixer control.
-  # We'll trigger a oneshot systemd service via udev whenever the Virtuoso USB
-  # device appears, and set the sidetone to max.
-  #
-  # We keep this host-local to avoid polluting other machines.
-  virtuosoSidetoneScript = pkgs.writeShellScript "virtuoso-sidetone" ''
-    set -euo pipefail
-
-    # Find the ALSA card number for the Virtuoso (USB order can change).
-    # /proc/asound/cards contains lines like:
-    #   4 [Gamin           ]: USB-Audio - CORSAIR VIRTUOSO Wireless Gamin
-    line="$(${pkgs.gnugrep}/bin/grep -m1 "VIRTUOSO" /proc/asound/cards || true)"
-    if [ -z "$line" ]; then
-      echo "Virtuoso ALSA card not found in /proc/asound/cards" >&2
-      exit 0
-    fi
-
-    card="$(${pkgs.gawk}/bin/awk '{print $1}' <<<"$line")"
-    if ! ${pkgs.gnugrep}/bin/grep -Eq '^[0-9]+$' <<<"$card"; then
-      echo "Failed to parse Virtuoso ALSA card number from line: $line" >&2
-      exit 1
-    fi
-
-    ${pkgs.alsa-utils}/bin/amixer -c "$card" sset Sidetone on
-    ${pkgs.alsa-utils}/bin/amixer -c "$card" sset Sidetone 23
-  '';
-
   # SDDM (Login Screen) background (Breeze theme)
   #
   # SDDM runs before any user session exists, so it cannot reliably read files
@@ -182,7 +160,11 @@ in
   my.programs._1password = {
     enable = true;
     polkitPolicyOwners = [ "zealsprince" ];
-    allowedBrowsers = [ "firefox" "firefox-devedition" "zen" ];
+    allowedBrowsers = [
+      "firefox"
+      "firefox-devedition"
+      "zen"
+    ];
   };
 
   my.security.howdy = {
@@ -329,7 +311,15 @@ in
     description = "Andrew Lake";
 
     # libvirt: manage VMs from virt-manager without sudo
-    extraGroups = [ "networkmanager" "wheel" "video" "plugdev" "libvirtd" "scanner" "lp" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "video"
+      "plugdev"
+      "libvirtd"
+      "scanner"
+      "lp"
+    ];
 
     shell = pkgs.zsh;
   };
@@ -444,8 +434,6 @@ in
     ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1b1c", ATTR{idProduct}=="0a42", TAG+="systemd", ENV{SYSTEMD_WANTS}+="virtuoso-sidetone.service"
     ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1b1c", ATTR{idProduct}=="0a49", TAG+="systemd", ENV{SYSTEMD_WANTS}+="virtuoso-sidetone.service"
   '';
-
-
 
   # Keep state version pinned per-host.
   system.stateVersion = "25.11";

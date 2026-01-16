@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 let
   cfg = config.my.programs._1password;
@@ -17,7 +17,11 @@ in
     allowedBrowsers = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      example = [ "firefox" "firefox-devedition" "zen" ];
+      example = [
+        "firefox"
+        "firefox-devedition"
+        "zen"
+      ];
       description = ''
         Lines written to `/etc/1password/custom_allowed_browsers`.
 

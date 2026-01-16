@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
   # The physical partition to use (referenced by PARTUUID since UUID is wiped on format)
@@ -24,7 +24,10 @@ in
   # the raw swap partition (which causes "device busy" errors).
   boot.kernelParams = [ "systemd.gpt_auto=0" ];
 
-
+  # Tell UDisks2 (and thus Dolphin) to ignore this partition.
+  services.udev.extraRules = ''
+    ENV{ID_PART_ENTRY_UUID}=="${swapPartUuid}", ENV{UDISKS_IGNORE}="1"
+  '';
 
   # --------------------------------------------------------------------------------
   # 2. Monolithic Service
@@ -60,7 +63,12 @@ in
     };
 
     # Required tools
-    path = [ pkgs.cryptsetup pkgs.util-linux pkgs.lvm2 pkgs.coreutils ];
+    path = [
+      pkgs.cryptsetup
+      pkgs.util-linux
+      pkgs.lvm2
+      pkgs.coreutils
+    ];
 
     serviceConfig = {
       Type = "oneshot";

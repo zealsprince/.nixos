@@ -10,7 +10,7 @@
 #   because `imports` are evaluated before `config` is fully built.
 # - A concrete host module is selected below; adjust as needed per machine.
 
-{ config, lib, pkgs, inputs ? null, ... }:
+{ ... }:
 
 {
   imports = [

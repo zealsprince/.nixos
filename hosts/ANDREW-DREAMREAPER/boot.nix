@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
   # Host-specific boot configuration for ANDREW-DREAMREAPER.

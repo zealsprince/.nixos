@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 # NOTE:
 # This module intentionally keeps `~/.zshrc` itself in the external `.dotfiles` repo
@@ -36,13 +41,6 @@ let
   # exact path can vary. We'll export a best-effort entrypoint and let dotfiles
   # handle absence gracefully.
   syntaxHighlightingPlugin = "${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh";
-
-  # NOTE: `pkgs.zsh-256color` is not present in this nixpkgs; avoid referencing it.
-  # If you want 256color support, we can swap to a different package or manage it via dotfiles.
-  zsh256colorPlugin = null;
-
-  # NOTE: `pkgs.zsh-github-copilot` is not present in this nixpkgs; avoid referencing it.
-  githubCopilotPlugin = null;
 
   codexPlugin = "${pkgs.fetchFromGitHub {
     owner = "tom-doerr";
@@ -155,7 +153,10 @@ in
       };
 
       signingFormat = lib.mkOption {
-        type = lib.types.enum [ "openpgp" "ssh" ];
+        type = lib.types.enum [
+          "openpgp"
+          "ssh"
+        ];
         default = "openpgp";
         description = "Git signing format. Use `openpgp` for GPG keys, or `ssh` for SSH-based signing.";
       };
@@ -228,20 +229,26 @@ in
         nix-direnv
 
         # Audio CLI utilities (for discovering/setting mic monitor/sidetone)
-        alsa-utils    # provides `amixer`
-        pulseaudio    # provides `pactl` (works with PipeWire's PulseAudio compatibility too)
+        alsa-utils # provides `amixer`
+        pulseaudio # provides `pactl` (works with PipeWire's PulseAudio compatibility too)
       ])
-      ++ (lib.optionals (cfg.git.enable && cfg.git.installGpg && cfg.git.signingFormat == "openpgp") (with pkgs; [
-        gnupg
-        pinentry-qt
-      ]))
+      ++ (lib.optionals (cfg.git.enable && cfg.git.installGpg && cfg.git.signingFormat == "openpgp") (
+        with pkgs;
+        [
+          gnupg
+          pinentry-qt
+        ]
+      ))
       # Provide Zsh plugin binaries/assets via Nix so dotfiles don't need to clone.
       # Dotfiles may source the entrypoints via env vars exported below.
-      ++ (lib.optionals cfg.zsh.enable (with pkgs; [
-        zsh-powerlevel10k
-        zsh-autosuggestions
-        zsh-syntax-highlighting
-      ]));
+      ++ (lib.optionals cfg.zsh.enable (
+        with pkgs;
+        [
+          zsh-powerlevel10k
+          zsh-autosuggestions
+          zsh-syntax-highlighting
+        ]
+      ));
 
     # Export stable entrypoint paths for dotfiles to consume (hybrid approach).
     #
@@ -411,55 +418,57 @@ in
     #
     # We keep the "global" config minimal and only add the 1Password agent.
     home.activation.ensureXdgSshConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      xdg_dir="${config.xdg.configHome}/ssh"
-      xdg_config="$xdg_dir/config"
+            xdg_dir="${config.xdg.configHome}/ssh"
+            xdg_config="$xdg_dir/config"
 
-      mkdir -p "$xdg_dir"
-      chmod 700 "$xdg_dir"
+            mkdir -p "$xdg_dir"
+            chmod 700 "$xdg_dir"
 
-      # If it was previously managed by Home Manager as a symlink, remove it.
-      if [ -L "$xdg_config" ]; then
-        rm -f "$xdg_config"
-      fi
+            # If it was previously managed by Home Manager as a symlink, remove it.
+            if [ -L "$xdg_config" ]; then
+              rm -f "$xdg_config"
+            fi
 
-      # Rewrite the file deterministically (no public host entries).
-      umask 077
-      if ${lib.boolToString cfg.ssh.use1PasswordAgent}; then
-        cat > "$xdg_config" <<'EOF'
-Host *
-  IdentityAgent ${cfg.ssh.onePasswordAgentSock}
-EOF
-      else
-        : > "$xdg_config"
-      fi
+            # Rewrite the file deterministically (no public host entries).
+            umask 077
+            if ${lib.boolToString cfg.ssh.use1PasswordAgent}; then
+              cat > "$xdg_config" <<'EOF'
+      Host *
+        IdentityAgent ${cfg.ssh.onePasswordAgentSock}
+      EOF
+            else
+              : > "$xdg_config"
+            fi
 
-      chmod 600 "$xdg_config"
+            chmod 600 "$xdg_config"
     '';
 
-    home.activation.ensureSshConfigIncludesXdg = lib.hm.dag.entryAfter [ "writeBoundary" "ensureXdgSshConfig" ] ''
-      ssh_dir="$HOME/.ssh"
-      ssh_config="$ssh_dir/config"
-      xdg_config="${config.xdg.configHome}/ssh/config"
+    home.activation.ensureSshConfigIncludesXdg =
+      lib.hm.dag.entryAfter [ "writeBoundary" "ensureXdgSshConfig" ]
+        ''
+          ssh_dir="$HOME/.ssh"
+          ssh_config="$ssh_dir/config"
+          xdg_config="${config.xdg.configHome}/ssh/config"
 
-      mkdir -p "$ssh_dir"
-      chmod 700 "$ssh_dir"
+          mkdir -p "$ssh_dir"
+          chmod 700 "$ssh_dir"
 
-      # If it's a symlink (e.g. managed by older HM config), remove it.
-      if [ -L "$ssh_config" ]; then
-        rm -f "$ssh_config"
-      fi
+          # If it's a symlink (e.g. managed by older HM config), remove it.
+          if [ -L "$ssh_config" ]; then
+            rm -f "$ssh_config"
+          fi
 
-      # Create the file if missing, with strict permissions.
-      if [ ! -e "$ssh_config" ]; then
-        umask 077
-        : > "$ssh_config"
-      fi
-      chmod 600 "$ssh_config"
+          # Create the file if missing, with strict permissions.
+          if [ ! -e "$ssh_config" ]; then
+            umask 077
+            : > "$ssh_config"
+          fi
+          chmod 600 "$ssh_config"
 
-      # Ensure it includes the XDG-managed config.
-      if ! grep -qE '^[[:space:]]*Include[[:space:]]+${config.xdg.configHome}/ssh/config[[:space:]]*$' "$ssh_config"; then
-        printf '%s\n' "Include ${config.xdg.configHome}/ssh/config" >> "$ssh_config"
-      fi
-    '';
+          # Ensure it includes the XDG-managed config.
+          if ! grep -qE '^[[:space:]]*Include[[:space:]]+${config.xdg.configHome}/ssh/config[[:space:]]*$' "$ssh_config"; then
+            printf '%s\n' "Include ${config.xdg.configHome}/ssh/config" >> "$ssh_config"
+          fi
+        '';
   };
 }

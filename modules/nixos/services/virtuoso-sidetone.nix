@@ -1,18 +1,20 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.my.services.virtuosoSidetone;
 
-  bash = "${pkgs.bash}/bin/bash";
-  grep = "${pkgs.gnugrep}/bin/grep";
-  head = "${pkgs.coreutils}/bin/head";
-  awk = "${pkgs.gawk}/bin/awk";
   amixer = "${pkgs.alsa-utils}/bin/amixer";
   sleep = "${pkgs.coreutils}/bin/sleep";
   seq = "${pkgs.coreutils}/bin/seq";
 
   # Clamp sidetone level to Virtuoso's observed range (0-23).
-  clampLevel = level:
+  clampLevel =
+    level:
     let
       l = if level < 0 then 0 else level;
     in

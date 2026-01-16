@@ -1,4 +1,8 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  ...
+}:
 
 let
   cfg = config.my.desktop.plasma6;
@@ -120,6 +124,31 @@ in
       # PipeWire routing/graph + policies
       wireplumber.enable = true;
 
+      # Disable HFP/HSP profiles for Momentum 4 to completely disable the microphone.
+      # This ensures only high-quality audio (A2DP) is available.
+      wireplumber.extraConfig = {
+        "51-momentum4-disable-hfp" = {
+          "monitor.bluez.rules" = [
+            {
+              matches = [
+                {
+                  "device.name" = "~bluez_card.*";
+                  "device.description" = "~.*(?i)momentum 4.*";
+                }
+              ];
+              actions = {
+                update-props = {
+                  "bluez5.roles" = [
+                    "a2dp_sink"
+                    "a2dp_source"
+                  ];
+                };
+              };
+            }
+          ];
+        };
+      };
+
       # ALSA + PulseAudio compatibility (your apps still “think” PulseAudio exists)
       alsa.enable = true;
       alsa.support32Bit = true;
@@ -137,9 +166,9 @@ in
           "default.clock.rate" = 48000;
 
           # Quantum (buffer size) in frames
-          "default.clock.quantum" = 128;
-          "default.clock.min-quantum" = 64;
-          "default.clock.max-quantum" = 256;
+          "default.clock.quantum" = 256;
+          "default.clock.min-quantum" = 128;
+          "default.clock.max-quantum" = 512;
         };
       };
 

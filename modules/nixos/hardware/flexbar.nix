@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ ... }:
 
 /*
   FlexBar USB permissions (ENIAC-Tech FlexBar)

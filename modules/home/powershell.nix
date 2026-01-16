@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ pkgs, ... }:
 
 let
   terraposh = pkgs.stdenvNoCC.mkDerivation {

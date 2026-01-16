@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ lib, ... }:
 
 {
   # Allow explicitly permitted insecure deps required by some packages (e.g. teamspeak3).
@@ -45,7 +45,10 @@
 
   # Nix settings
   nix.settings = {
-    experimental-features = lib.mkDefault [ "nix-command" "flakes" ];
+    experimental-features = lib.mkDefault [
+      "nix-command"
+      "flakes"
+    ];
     substituters = lib.mkDefault [ "https://nix-community.cachix.org" ];
     trusted-public-keys = lib.mkDefault [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="

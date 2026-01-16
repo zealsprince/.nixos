@@ -1,4 +1,8 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  lib,
+  ...
+}:
 
 let
   cfg = config.my.home.packages.desktop.amd;
@@ -20,10 +24,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages =
-      (with pkgs; [
-
-      ])
-      ++ cfg.packages;
+    home.packages = cfg.packages;
   };
 }
