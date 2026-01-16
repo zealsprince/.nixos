@@ -1,4 +1,10 @@
-{ config, pkgs, lib, inputs, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  inputs,
+  ...
+}:
 
 let
   plezy = inputs.mio19-nurpkgs.packages.${pkgs.stdenv.hostPlatform.system}.plezy;
@@ -27,6 +33,7 @@ in
       (with pkgs; [
         # More heafty CLI tools
         ffmpeg-full
+        whisper-cpp-vulkan
 
         # Essentials
         resources
@@ -39,8 +46,6 @@ in
         plezy
         opensnitch-ui
         syncthing
-        # lxappearance
-        # squirreldisk
 
         # Hate it but I need it
         spotify
