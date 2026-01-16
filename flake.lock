@@ -307,6 +307,22 @@
         "type": "github"
       }
     },
+    "neko-zed-dark": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1768544472,
+        "narHash": "sha256-f3mAYCtSbTdAMt8YlxC1rOZNk46xQx4LAgIQQOu7hp8=",
+        "owner": "zealsprince",
+        "repo": "neko-zed-dark",
+        "rev": "c6af28f7bb862a740681e3825cbf8b77a6d8be8e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zealsprince",
+        "repo": "neko-zed-dark",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1756035328,
@@ -510,6 +526,7 @@
         "kwin-effects-forceblur": "kwin-effects-forceblur",
         "lanzaboote": "lanzaboote",
         "mio19-nurpkgs": "mio19-nurpkgs",
+        "neko-zed-dark": "neko-zed-dark",
         "nixpkgs": "nixpkgs_5",
         "nixpkgs-howdy": "nixpkgs-howdy",
         "nixpkgs-unstable": "nixpkgs-unstable",

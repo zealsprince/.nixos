@@ -1,4 +1,8 @@
-{ config, pkgs, lib, inputs ? null, ... }:
+{
+  pkgs,
+  inputs ? null,
+  ...
+}:
 
 let
   # Install upstream base16-shell into a store path, and bundle your custom
@@ -133,10 +137,6 @@ in
     username = "zealsprince";
     homeDirectory = "/home/zealsprince";
     stateVersion = "25.11";
-
-    # User packages are split into dedicated modules under `modules/home/packages/*`.
-    # Keep this as an override hook for host/user-specific additions.
-    packages = with pkgs; [ ];
 
     zsh = {
       enable = true;

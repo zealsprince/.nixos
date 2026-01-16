@@ -49,12 +49,31 @@
       url = "github:zealsprince/.dotfiles";
       flake = false;
     };
+
+    neko-zed-dark = {
+      url = "github:zealsprince/neko-zed-dark";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, lanzaboote, home-manager, ... }@inputs:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nixpkgs-unstable,
+      lanzaboote,
+      home-manager,
+      ...
+    }@inputs:
     let
-      pkgs = import nixpkgs { system = "x86_64-linux"; config.allowUnfree = true; };
-      pkgs-unstable = import nixpkgs-unstable { system = "x86_64-linux"; config.allowUnfree = true; };
+      pkgs = import nixpkgs {
+        system = "x86_64-linux";
+        config.allowUnfree = true;
+      };
+      pkgs-unstable = import nixpkgs-unstable {
+        system = "x86_64-linux";
+        config.allowUnfree = true;
+      };
     in
     {
       # -----------------------------------------------------------------------

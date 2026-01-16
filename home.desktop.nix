@@ -1,4 +1,4 @@
-{ config, pkgs, lib, inputs ? null, ... }:
+{ inputs, ... }:
 
 {
   imports = [
@@ -14,6 +14,10 @@
     # WM-specific config (Plasma 6)
     ./modules/home/wm/plasma6.nix
   ];
+
+  # Zed Editor Theme
+  home.file.".config/zed/themes/neko-dark.json".source =
+    inputs.neko-zed-dark + "/themes/neko-dark.json";
 
   # ---------------------------------------------------------------------------
   # Desktop (GUI) user package set
@@ -86,7 +90,10 @@
         launch = null;
 
         startStopRegionRecording = "Ctrl+Meta+%";
-        startStopScreenRecording = [ "Meta+Alt+R" "Ctrl+Meta+^" ];
+        startStopScreenRecording = [
+          "Meta+Alt+R"
+          "Ctrl+Meta+^"
+        ];
         startStopWindowRecording = "Meta+Ctrl+R";
       };
 
