@@ -42,6 +42,7 @@
         cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DUSE_DBUS_MENU=0" ];
       }))
       openlinkhub
+      openrgb-with-all-plugins
       # headsetcontrol
 
       # Media / utilities commonly expected on desktop

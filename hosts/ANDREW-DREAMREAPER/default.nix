@@ -45,6 +45,7 @@ in
 
     # Hardware permissions (FlexBar USB access)
     ../../modules/nixos/hardware/flexbar.nix
+    ../../modules/nixos/hardware/openrgb.nix
 
     # Base system packages for all hosts
     ../../modules/nixos/packages/base.nix
@@ -280,6 +281,9 @@ in
 
   # Steam (host needs 32-bit OpenGL/Vulkan userspace for Steam + many games)
   programs.steam.enable = true;
+
+  # OpenRGB: enable AMD SMBus driver support for this host
+  hardware.openrgb.motherboard = "amd";
 
   hardware.graphics = {
     enable = true;
