@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.my.services.opensnitch;
@@ -44,6 +49,17 @@ in
       default = "${cfg.configDir}/default-config.json";
       description = "Config file path passed to opensnitchd via --config-file.";
     };
+
+    monitorMethod = lib.mkOption {
+      type = lib.types.enum [
+        "ebpf"
+        "proc"
+        "ftrace"
+        "audit"
+      ];
+      default = "ebpf";
+      description = "Method to monitor processes.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -75,7 +91,7 @@ in
 
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${cfg.package}/bin/opensnitchd --config-file ${cfg.configFile} -rules-path ${cfg.rulesDir}";
+        ExecStart = "${cfg.package}/bin/opensnitchd --config-file ${cfg.configFile} -rules-path ${cfg.rulesDir} -process-monitor-method ${cfg.monitorMethod}";
         Restart = "always";
         RestartSec = "30";
         TimeoutStopSec = "10";

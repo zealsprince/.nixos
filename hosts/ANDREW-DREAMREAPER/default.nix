@@ -95,7 +95,10 @@ in
   ];
 
   my.services.openlinkhub.enable = true;
-  my.services.opensnitch.enable = true;
+  my.services.opensnitch = {
+    enable = true;
+    monitorMethod = "proc";
+  };
   my.services.mullvad.enable = true;
   my.services.ollama = {
     enable = true;
