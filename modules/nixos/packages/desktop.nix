@@ -55,12 +55,6 @@
       # PipeWire patchbay (visual audio routing)
       qpwgraph
 
-      # Disk usage analyzer
-      kdePackages.filelight
-
-      # Need a calculator
-      kdePackages.kalk
-
       # Terminal emulators (desktop preference)
       alacritty
       kitty

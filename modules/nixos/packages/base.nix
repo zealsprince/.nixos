@@ -38,5 +38,7 @@
     rsync
     fzf
     zoxide
+    age
+    sops
   ];
 }

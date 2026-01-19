@@ -1,4 +1,10 @@
-{ pkgs, lib, config, inputs, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  inputs,
+  ...
+}:
 
 let
   plasmaEnabled = config.my.desktop.plasma6.enable or false;
@@ -21,6 +27,13 @@ in
     environment.systemPackages = with pkgs; [
       # KDE/Plasma utilities
       kdePackages.yakuake
+
+      # Disk usage analyzer
+      kdePackages.filelight
+      kdePackages.kdenetwork-filesharing
+
+      # Need a calculator
+      kdePackages.kalk
 
       # Pinentry UI that fits KDE/Qt environments
       pinentry-qt

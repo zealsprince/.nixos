@@ -37,6 +37,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nur = {
+      url = "github:nix-community/NUR";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # mio-19 NUR (contains pkgs/plezy)
     mio19-nurpkgs = {
       url = "github:mio-19/nurpkgs";
@@ -88,6 +98,9 @@
           };
 
           modules = [
+            inputs.nur.modules.nixos.default
+            inputs.nur.legacyPackages.x86_64-linux.repos.charmbracelet.modules.nixos.crush
+
             # Host entrypoint (imports hardware + host boot + reusable modules)
             ./hosts/ANDREW-DREAMREAPER/default.nix
 
@@ -105,7 +118,10 @@
               # Desktop host uses the desktop HM profile.
               # (The desktop profile should import ./home.nix as a base)
               home-manager.users.zealsprince = {
-                imports = [ ./home.desktop.nix ];
+                imports = [
+                  inputs.sops-nix.homeManagerModules.sops
+                  ./home.desktop.nix
+                ];
 
                 # AMD-specific desktop addons (ROCm, etc.)
                 my.home.packages.desktop.amd.enable = true;
@@ -120,6 +136,7 @@
 
             # Howdy module definition (service module comes from the input)
             "${inputs.nixpkgs-howdy}/nixos/modules/services/security/howdy"
+
           ];
         };
       };
@@ -135,6 +152,7 @@
           extraSpecialArgs = { inherit inputs; };
 
           modules = [
+            inputs.sops-nix.homeManagerModules.sops
             ./home.nix
           ];
         };
@@ -146,6 +164,7 @@
           extraSpecialArgs = { inherit inputs; };
 
           modules = [
+            inputs.sops-nix.homeManagerModules.sops
             ./home.desktop.nix
           ];
         };
