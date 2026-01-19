@@ -89,6 +89,7 @@ in
         heroic
         lutris
         prismlauncher
+        r2modman
         gamescope
         mangohud
         osu-lazer-bin
