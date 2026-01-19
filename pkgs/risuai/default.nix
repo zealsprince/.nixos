@@ -39,11 +39,11 @@
 
 stdenv.mkDerivation rec {
   pname = "risuai";
-  version = "2026.1.90";
+  version = "2026.1.184";
 
   src = fetchurl {
     url = "https://github.com/kwaroran/RisuAI/releases/download/v${version}/RisuAI_${version}_amd64.deb";
-    sha256 = "1rav7zpl37jzml60v7633j7jpqcf3mqpsx6alh4gz5kfbxdahvwi";
+    sha256 = "sha256-mT6K0NvxzFU3orpy78Y9koc2CTku2RHk1m9mPrZzZcA=";
   };
 
   nativeBuildInputs = [
