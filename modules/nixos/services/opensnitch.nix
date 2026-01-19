@@ -7,6 +7,19 @@
 
 let
   cfg = config.my.services.opensnitch;
+
+  # Use the packaged defaults as a base, but force the process monitor method to
+  # the one selected via NixOS (e.g. "proc" to avoid kernel/ebpf incompat).
+  packagedDefaultConfigPath = "${cfg.package}/etc/opensnitchd/default-config.json";
+  packagedSystemFwPath = "${cfg.package}/etc/opensnitchd/system-fw.json";
+
+  packagedDefaultConfig = builtins.fromJSON (builtins.readFile packagedDefaultConfigPath);
+
+  generatedDefaultConfig = packagedDefaultConfig // {
+    ProcMonitorMethod = cfg.monitorMethod;
+  };
+
+  generatedDefaultConfigText = builtins.toJSON generatedDefaultConfig;
 in
 {
   options.my.services.opensnitch = {
@@ -65,16 +78,18 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [ cfg.package ];
 
-    # Ensure directories / config exist and persist between rebuilds.
+    # Ensure state directories exist and persist between rebuilds.
     systemd.tmpfiles.rules = [
       "d ${cfg.stateDir} 0755 root root -"
       "d ${cfg.rulesDir} 0755 root root -"
-      "d ${cfg.configDir} 0755 root root -"
-
-      # Seed default config into /etc if you haven't created your own yet.
-      # (If the file already exists, tmpfiles won't overwrite it.)
-      "C ${cfg.configFile} 0644 root root - ${cfg.package}/etc/opensnitchd/default-config.json"
     ];
+
+    # Manage OpenSnitch config files via Nix so they always exist, regardless of
+    # tmpfiles/service start ordering.
+    #
+    # Note: OpenSnitch expects these paths (and the GUI relies on them).
+    environment.etc."opensnitchd/default-config.json".text = generatedDefaultConfigText;
+    environment.etc."opensnitchd/system-fw.json".source = packagedSystemFwPath;
 
     # We fully own the unit to avoid fragment/drop-in composition issues and
     # ensure a single authoritative ExecStart (systemd refuses multiple ExecStart=

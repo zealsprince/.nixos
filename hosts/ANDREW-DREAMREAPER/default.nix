@@ -20,6 +20,15 @@ in
 
 {
 
+  # ===========================================================================
+  # Networking sysctls
+  # ===========================================================================
+  # Required for routing/NAT (e.g. container networking). If this is 0, Docker
+  # containers typically can't reach the internet.
+  boot.kernel.sysctl = {
+    "net.ipv4.ip_forward" = 1;
+  };
+
   imports = [
     ./hardware-configuration.nix
 
