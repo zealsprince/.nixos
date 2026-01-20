@@ -152,6 +152,8 @@ in
     level = 23;
   };
 
+  my.services.samba.enable = true;
+
   my.desktop.plasma6 = {
     enable = true;
     videoDrivers = [ "amdgpu" ];
@@ -335,6 +337,7 @@ in
       "libvirtd"
       "scanner"
       "lp"
+      "sambashare"
     ];
 
     shell = pkgs.zsh;

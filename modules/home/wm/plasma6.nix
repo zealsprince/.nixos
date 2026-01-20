@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
   cfg = config.my.home.wm.plasma6;
@@ -9,9 +14,108 @@ let
     cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DUSE_DBUS_MENU=0" ];
   });
 
+  # Dolphin servicemenu helper: opens the selected file/folder on dropbox.com,
+  # by mapping the local path under Maestral's configured Dropbox root.
+  #
+  # IMPORTANT: This is a Nix multiline string. Any shell `${...}` sequences must be
+  # escaped as `''${...}` to avoid Nix attempting interpolation.
+  maestralOpenDropbox = pkgs.writeShellScriptBin "maestral-open-dropbox" ''
+    #!/bin/sh
+    set -eu
+
+    if maestral status | grep -qFi 'not running'; then
+      err='Maestral not running'
+    elif ! droot="$(maestral config get path)"; then
+      err='Maestral not found'
+    elif ! real="$(realpath -eLPq "$1")"; then
+      err='Path does not exist'
+    elif [ "''${#real}" -le "''${#droot}" ] || [ "''${real#"$droot"}" = "$real" ]; then
+      err="The path $real is not below the Dropbox root directory $droot"
+    else
+      if [ -d "$real" ]; then
+        pfx=home
+      else
+        pfx=preview
+      fi
+
+      # Strip "$droot/" prefix and prefix with "/" for Dropbox URL usage.
+      rel="/$(printf '%s' "$real" | sed "s|^$droot/||")"
+
+      xdg-open "https://www.dropbox.com/$pfx$rel"
+      exit 0
+    fi
+
+    notify-send Error "$err"
+    exit 1
+  '';
+
+  # Dolphin servicemenu helper: copies a Dropbox shared link for the selected file/folder
+  # to the clipboard using Maestral's `sharelink create`.
+  #
+  # Clipboard support:
+  # - Wayland: wl-copy
+  # - X11: xclip
+  #
+  # IMPORTANT: This is a Nix multiline string. Any shell `${...}` sequences must be
+  # escaped as `''${...}` to avoid Nix attempting interpolation.
+  maestralCopySharelink = pkgs.writeShellScriptBin "maestral-copy-sharelink" ''
+    #!/bin/sh
+    set -eu
+
+    if maestral status | grep -qFi 'not running'; then
+      err='Maestral not running'
+    elif ! droot="$(maestral config get path)"; then
+      err='Maestral not found'
+    elif ! real="$(realpath -eLPq "$1")"; then
+      err='Path does not exist'
+    elif [ "''${#real}" -le "''${#droot}" ] || [ "''${real#"$droot"}" = "$real" ]; then
+      err="The path $real is not below the Dropbox root directory $droot"
+    else
+      # Convert local path -> Dropbox path (POSIX-style, rooted at /)
+      dbx_path="/$(printf '%s' "$real" | sed "s|^$droot/||")"
+
+      # Create / fetch a shared link URL from Maestral.
+      #
+      # Note: `maestral sharelink create` fails with a non-zero exit code if the link
+      # already exists ("The shared link already exists."). Treat that case as success
+      # by falling back to `maestral sharelink list` and using the existing URL.
+      if url="$(maestral sharelink create "$dbx_path" 2>/dev/null)"; then
+        : # created new link
+      else
+        # Try to reuse an existing link (if one exists).
+        url="$(maestral sharelink list "$dbx_path" 2>/dev/null | head -n 1 || true)"
+        if [ -z "$url" ]; then
+          err="Failed to create a shared link for $dbx_path"
+        fi
+      fi
+
+      if [ -z "$url" ]; then
+        : # err already set
+      elif command -v wl-copy >/dev/null 2>&1; then
+        printf '%s' "$url" | wl-copy
+        notify-send "Dropbox link copied" "$url"
+        exit 0
+      elif command -v xclip >/dev/null 2>&1; then
+        printf '%s' "$url" | xclip -selection clipboard
+        notify-send "Dropbox link copied" "$url"
+        exit 0
+      else
+        err="No clipboard helper found (need wl-copy or xclip). Link: $url"
+      fi
+    fi
+
+    notify-send Error "$err"
+    exit 1
+  '';
+
   kwriteconfig = "${pkgs.kdePackages.kconfig}/bin/kwriteconfig6";
 
-  mkAutostartDesktop = { name, exec, startupNotify ? false }:
+  mkAutostartDesktop =
+    {
+      name,
+      exec,
+      startupNotify ? false,
+    }:
     ''
       [Desktop Entry]
       Type=Application
@@ -25,7 +129,12 @@ let
   #
   # Note: This does not guarantee an app is minimized; it only launches it in a way
   # that tends to avoid focus-stealing and keeps it out of autostart UIs.
-  mkAutostartDesktopHidden = { name, exec, startupNotify ? false }:
+  mkAutostartDesktopHidden =
+    {
+      name,
+      exec,
+      startupNotify ? false,
+    }:
     ''
       [Desktop Entry]
       Type=Application
@@ -46,49 +155,50 @@ let
   #   2) poll briefly for matching windows
   #   3) close the window (apps configured for “close to tray” will hide into the tray)
   #   4) write a small log so you can confirm which windows were acted on
-  mkPostLoginWindowHandlerScript = {
-    closeClasses ? [],
-    minimizeClasses ? [],
-    attempts ? 120,
-    sleepSeconds ? 0.5,
-    initialDelaySeconds ? 3,
-    closeDelaySeconds ? 1,
-    ...
-  }:
+  mkPostLoginWindowHandlerScript =
+    {
+      closeClasses ? [ ],
+      minimizeClasses ? [ ],
+      attempts ? 120,
+      sleepSeconds ? 0.5,
+      initialDelaySeconds ? 3,
+      closeDelaySeconds ? 1,
+      ...
+    }:
     let
       closeRegex = "(" + (lib.concatStringsSep "|" (map lib.escapeRegex closeClasses)) + ")";
       minimizeRegex = "(" + (lib.concatStringsSep "|" (map lib.escapeRegex minimizeClasses)) + ")";
-      hasClose = closeClasses != [];
-      hasMinimize = minimizeClasses != [];
+      hasClose = closeClasses != [ ];
+      hasMinimize = minimizeClasses != [ ];
     in
-      pkgs.writeShellScript "plasma6-post-login-window-handler" ''
-        set -eu
+    pkgs.writeShellScript "plasma6-post-login-window-handler" ''
+      set -eu
 
-        # Use fallback for XDG_STATE_HOME to prevent unbound variable errors
-        STATE_DIR="''${XDG_STATE_HOME:-$HOME/.local/state}/plasma6"
-        LOG_FILE="$STATE_DIR/post-login-window-handler.log"
-        KDOTOOL="${pkgs.kdotool}/bin/kdotool"
+      # Use fallback for XDG_STATE_HOME to prevent unbound variable errors
+      STATE_DIR="''${XDG_STATE_HOME:-$HOME/.local/state}/plasma6"
+      LOG_FILE="$STATE_DIR/post-login-window-handler.log"
+      KDOTOOL="${pkgs.kdotool}/bin/kdotool"
 
-        mkdir -p "$STATE_DIR" 2>/dev/null || true
+      mkdir -p "$STATE_DIR" 2>/dev/null || true
 
-        log() {
-          echo "[$(date -Iseconds)] $*" >>"$LOG_FILE" 2>/dev/null || true
-        }
+      log() {
+        echo "[$(date -Iseconds)] $*" >>"$LOG_FILE" 2>/dev/null || true
+      }
 
-        log "starting post-login window handler"
-        log "  initialDelaySeconds=${toString initialDelaySeconds} attempts=${toString attempts}"
+      log "starting post-login window handler"
+      log "  initialDelaySeconds=${toString initialDelaySeconds} attempts=${toString attempts}"
 
-        # Give Plasma a moment to finish bringing up the panel/tray.
-        sleep ${toString initialDelaySeconds}
+      # Give Plasma a moment to finish bringing up the panel/tray.
+      sleep ${toString initialDelaySeconds}
 
-        i=0
-        # Track processed classes to avoid re-closing windows if the user re-opens them
-        processed_classes=" "
+      i=0
+      # Track processed classes to avoid re-closing windows if the user re-opens them
+      processed_classes=" "
 
-        while [ "$i" -lt ${toString attempts} ]; do
+      while [ "$i" -lt ${toString attempts} ]; do
 
-          # 1. Close list
-          ${lib.optionalString hasClose ''
+        # 1. Close list
+        ${lib.optionalString hasClose ''
           ids_c="$($KDOTOOL search --class '${closeRegex}' 2>/dev/null || true)"
           batch_classes=""
 
@@ -116,10 +226,10 @@ let
             # Update processed classes
             processed_classes="''${processed_classes}''${batch_classes}"
           fi
-          ''}
+        ''}
 
-          # 2. Minimize list
-          ${lib.optionalString hasMinimize ''
+        # 2. Minimize list
+        ${lib.optionalString hasMinimize ''
           ids_m="$($KDOTOOL search --class '${minimizeRegex}' 2>/dev/null || true)"
           batch_classes=""
 
@@ -147,22 +257,26 @@ let
             # Update processed classes
             processed_classes="''${processed_classes}''${batch_classes}"
           fi
-          ''}
+        ''}
 
-          i=$((i + 1))
-          sleep ${toString sleepSeconds}
-        done
+        i=$((i + 1))
+        sleep ${toString sleepSeconds}
+      done
 
-        log "finished post-login window handler"
-      '';
+      log "finished post-login window handler"
+    '';
 
   # Convenience helper for apps that don’t have a reliable “start minimized” flag.
-  mkAutostartDesktopTray = { name, exec }:
-    mkAutostartDesktopHidden { inherit name exec; startupNotify = false; };
+  mkAutostartDesktopTray =
+    { name, exec }:
+    mkAutostartDesktopHidden {
+      inherit name exec;
+      startupNotify = false;
+    };
 
-  mkKsc = primary: defaultShortcut: description:
+  mkKsc =
+    primary: defaultShortcut: description:
     "${primary},${defaultShortcut},${description}";
-
 
 in
 {
@@ -252,7 +366,13 @@ in
     postLogin = {
       closeClasses = lib.mkOption {
         type = lib.types.listOf lib.types.str;
-        default = [ "teams-for-linux" "mullvad vpn" "slack" "qpwgraph" "Ferdium" ];
+        default = [
+          "teams-for-linux"
+          "mullvad vpn"
+          "slack"
+          "qpwgraph"
+          "Ferdium"
+        ];
         description = "List of window classes to close (to tray) shortly after login.";
       };
       minimizeClasses = lib.mkOption {
@@ -324,7 +444,10 @@ in
         # Plasma stores multiple shortcuts separated by a tab character.
         startStopScreenRecording = lib.mkOption {
           type = lib.types.listOf lib.types.str;
-          default = [ "Meta+Alt+R" "Ctrl+Meta+^" ];
+          default = [
+            "Meta+Alt+R"
+            "Ctrl+Meta+^"
+          ];
           description = "Shortcuts for 'Start/Stop Screen Recording'. First is primary; additional entries are joined by a tab.";
         };
 
@@ -383,122 +506,143 @@ in
     # Autostart entries (KDE reads ~/.config/autostart/*.desktop)
     # -------------------------------------------------------------------------
     home.file = lib.mkMerge [
+      # ---------------------------------------------------------------------
+      # Dolphin: Service menu integration for Maestral (Dropbox)
+      #
+      # Adds a right-click action in Dolphin: "Open on Dropbox"
+      #
+      # Based on: https://gist.github.com/Roy-Orbison/ada4455eea3aef9b276f0b1ef448d212
+      #
+      # Notes:
+      # - The helper script uses `maestral` to locate your Dropbox root.
+      # - It validates the selected path is inside the Maestral Dropbox root.
+      # - It opens the corresponding URL on dropbox.com via `xdg-open`.
+      # - Errors are shown via `notify-send`.
+      #
+      # Requirements:
+      # - `maestral` (already in your desktop package set)
+      # - `coreutils` (realpath), `xdg-utils` (xdg-open), `libnotify` (notify-send)
+      # ---------------------------------------------------------------------
+      {
+        ".local/share/kio/servicemenus/maestral-open.desktop".text = ''
+          [Desktop Entry]
+          Type=Service
+          X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+          MimeType=inode/directory;application/octet-stream;
+          Actions=maestralOpenOnDropboxSite;maestralCopySharelink
+
+          [Desktop Action maestralOpenOnDropboxSite]
+          Name=Open on Dropbox
+          Icon=link
+          Exec=${maestralOpenDropbox}/bin/maestral-open-dropbox %f;
+
+          [Desktop Action maestralCopySharelink]
+          Name=Copy Dropbox Share Link
+          Icon=edit-copy
+          Exec=${maestralCopySharelink}/bin/maestral-copy-sharelink %f;
+        '';
+      }
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.yakuake.enable) {
-        ".config/autostart/yakuake.desktop".text =
-          mkAutostartDesktop {
-            name = "Dropdown Terminal (Yakuake)";
-            exec =
-              "${pkgs.kdePackages.yakuake}/bin/yakuake"
-              + lib.optionalString cfg.autostart.yakuake.hideWindow " --hide-window";
-          };
+        ".config/autostart/yakuake.desktop".text = mkAutostartDesktop {
+          name = "Dropdown Terminal (Yakuake)";
+          exec =
+            "${pkgs.kdePackages.yakuake}/bin/yakuake"
+            + lib.optionalString cfg.autostart.yakuake.hideWindow " --hide-window";
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.spectacle.enable) {
-        ".config/autostart/org.kde.spectacle.desktop".text =
-          mkAutostartDesktop {
-            name = "Spectacle";
-            # Important: --background takes a screenshot; --dbus registers for activation
-            exec = "${pkgs.kdePackages.spectacle}/bin/spectacle --dbus";
-          };
+        ".config/autostart/org.kde.spectacle.desktop".text = mkAutostartDesktop {
+          name = "Spectacle";
+          # Important: --background takes a screenshot; --dbus registers for activation
+          exec = "${pkgs.kdePackages.spectacle}/bin/spectacle --dbus";
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.onePassword.enable) {
-        ".config/autostart/1password.desktop".text =
-          mkAutostartDesktopTray {
-            name = "1Password";
-            exec =
-              "${pkgs._1password-gui}/bin/1password"
-              + lib.optionalString cfg.autostart.onePassword.silent " --silent";
-          };
+        ".config/autostart/1password.desktop".text = mkAutostartDesktopTray {
+          name = "1Password";
+          exec =
+            "${pkgs._1password-gui}/bin/1password"
+            + lib.optionalString cfg.autostart.onePassword.silent " --silent";
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.steam.enable) {
-        ".config/autostart/steam.desktop".text =
-          mkAutostartDesktop {
-            name = "Steam";
-            exec = "${pkgs.steam}/bin/steam -silent";
-          };
+        ".config/autostart/steam.desktop".text = mkAutostartDesktop {
+          name = "Steam";
+          exec = "${pkgs.steam}/bin/steam -silent";
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.discord.enable) {
-        ".config/autostart/discord.desktop".text =
-          mkAutostartDesktop {
-            name = "Discord";
-            exec = "${pkgs.discord}/bin/discord --start-minimized --enable-blink-features=MiddleClickAutoscroll";
-          };
+        ".config/autostart/discord.desktop".text = mkAutostartDesktop {
+          name = "Discord";
+          exec = "${pkgs.discord}/bin/discord --start-minimized --enable-blink-features=MiddleClickAutoscroll";
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.slack.enable) {
-        ".config/autostart/slack.desktop".text =
-          mkAutostartDesktopHidden {
-            name = "Slack";
-            exec = "${pkgs.slack}/bin/slack";
-            startupNotify = false;
-          };
+        ".config/autostart/slack.desktop".text = mkAutostartDesktopHidden {
+          name = "Slack";
+          exec = "${pkgs.slack}/bin/slack";
+          startupNotify = false;
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.teams.enable) {
-        ".config/autostart/teams.desktop".text =
-          mkAutostartDesktopHidden {
-            name = "Teams";
-            # Note: `teams-for-linux` is typically the Nixpkgs package name;
-            # keep this consistent with whatever you have installed.
-            exec = "${pkgs.teams-for-linux}/bin/teams-for-linux";
-            startupNotify = false;
-          };
+        ".config/autostart/teams.desktop".text = mkAutostartDesktopHidden {
+          name = "Teams";
+          # Note: `teams-for-linux` is typically the Nixpkgs package name;
+          # keep this consistent with whatever you have installed.
+          exec = "${pkgs.teams-for-linux}/bin/teams-for-linux";
+          startupNotify = false;
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.flexDesigner.enable) {
-        ".config/autostart/flex-designer.desktop".text =
-          mkAutostartDesktopHidden {
-            name = "FlexDesigner (Tray)";
-            exec = "sleep ${toString cfg.autostart.flexDesigner.delaySeconds}; flex-designer";
-            startupNotify = false;
-          };
+        ".config/autostart/flex-designer.desktop".text = mkAutostartDesktopHidden {
+          name = "FlexDesigner (Tray)";
+          exec = "sleep ${toString cfg.autostart.flexDesigner.delaySeconds}; flex-designer";
+          startupNotify = false;
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.opensnitchUi.enable) {
-        ".config/autostart/opensnitch-ui.desktop".text =
-          mkAutostartDesktopTray {
-            name = "OpenSnitch UI";
-            exec = "${pkgs.opensnitch-ui}/bin/opensnitch-ui";
-          };
+        ".config/autostart/opensnitch-ui.desktop".text = mkAutostartDesktopTray {
+          name = "OpenSnitch UI";
+          exec = "${pkgs.opensnitch-ui}/bin/opensnitch-ui";
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.qpwgraph.enable) {
-        ".config/autostart/qpwgraph.desktop".text =
-          mkAutostartDesktopTray {
-            name = "qpwgraph";
-            exec = "${pkgs.qpwgraph}/bin/qpwgraph";
-          };
+        ".config/autostart/qpwgraph.desktop".text = mkAutostartDesktopTray {
+          name = "qpwgraph";
+          exec = "${pkgs.qpwgraph}/bin/qpwgraph";
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.mullvadVpn.enable) {
-        ".config/autostart/mullvad-vpn.desktop".text =
-          mkAutostartDesktopTray {
-            name = "Mullvad VPN";
-            exec = "${pkgs.mullvad-vpn}/bin/mullvad-vpn";
-          };
+        ".config/autostart/mullvad-vpn.desktop".text = mkAutostartDesktopTray {
+          name = "Mullvad VPN";
+          exec = "${pkgs.mullvad-vpn}/bin/mullvad-vpn";
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.ferdium.enable) {
-        ".config/autostart/ferdium.desktop".text =
-          mkAutostartDesktopTray {
-            name = "Ferdium";
-            exec =
-              "${pkgs.ferdium}/bin/ferdium"
-              + lib.optionalString cfg.autostart.ferdium.minimized " --minimized";
-          };
+        ".config/autostart/ferdium.desktop".text = mkAutostartDesktopTray {
+          name = "Ferdium";
+          exec =
+            "${pkgs.ferdium}/bin/ferdium" + lib.optionalString cfg.autostart.ferdium.minimized " --minimized";
+        };
       })
 
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.ckbNext.enable) {
-        ".config/autostart/ckb-next.desktop".text =
-          mkAutostartDesktopTray {
-            name = "ckb-next";
-            exec = "${ckbNextPkg}/bin/ckb-next --background";
-          };
+        ".config/autostart/ckb-next.desktop".text = mkAutostartDesktopTray {
+          name = "ckb-next";
+          exec = "${ckbNextPkg}/bin/ckb-next --background";
+        };
       })
-
 
     ];
 
@@ -510,18 +654,18 @@ in
     # during autostart (Electron/Qt apps commonly do this on Plasma Wayland).
     # -------------------------------------------------------------------------
     systemd.user.services.plasma6PostLoginWindowHandler =
-      lib.mkIf (cfg.postLogin.closeClasses != [] || cfg.postLogin.minimizeClasses != []) {
-        Unit = {
-          Description = "Plasma 6 post-login window handler for selected apps (Wayland)";
-          After = [ "graphical-session.target" ];
-          Wants = [ "graphical-session.target" ];
-        };
-        Service = {
-          Type = "simple";
-          ExecStart =
-            let
-              script =
-                mkPostLoginWindowHandlerScript {
+      lib.mkIf (cfg.postLogin.closeClasses != [ ] || cfg.postLogin.minimizeClasses != [ ])
+        {
+          Unit = {
+            Description = "Plasma 6 post-login window handler for selected apps (Wayland)";
+            After = [ "graphical-session.target" ];
+            Wants = [ "graphical-session.target" ];
+          };
+          Service = {
+            Type = "simple";
+            ExecStart =
+              let
+                script = mkPostLoginWindowHandlerScript {
                   closeClasses = cfg.postLogin.closeClasses;
                   minimizeClasses = cfg.postLogin.minimizeClasses;
 
@@ -530,85 +674,143 @@ in
                   closeDelaySeconds = 2;
                   attempts = 60;
                 };
-            in
+              in
               "${script}";
+          };
+          Install = {
+            WantedBy = [ "graphical-session.target" ];
+          };
         };
-        Install = {
-          WantedBy = [ "graphical-session.target" ];
-        };
-      };
 
-    home.activation.configurePlasma6 =
-      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        set -e
+    home.activation.configurePlasma6 = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      set -e
 
-        ${lib.optionalString cfg.shortcuts.enable ''
-          # ---- Spectacle ----
-          ${lib.optionalString cfg.shortcuts.spectacle.enable ''
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "_k_friendly_name" "Spectacle"
+      ${lib.optionalString cfg.shortcuts.enable ''
+        # ---- Spectacle ----
+        ${lib.optionalString cfg.shortcuts.spectacle.enable ''
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "_k_friendly_name" "Spectacle"
 
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "ActiveWindowScreenShot" \
-              "${mkKsc cfg.shortcuts.spectacle.activeWindow cfg.shortcuts.spectacle.activeWindow "Capture Active Window"}"
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "ActiveWindowScreenShot" \
+            "${
+              mkKsc cfg.shortcuts.spectacle.activeWindow cfg.shortcuts.spectacle.activeWindow
+                "Capture Active Window"
+            }"
 
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "FullScreenScreenShot" \
-              "${mkKsc cfg.shortcuts.spectacle.fullscreen cfg.shortcuts.spectacle.fullscreen "Capture Entire Desktop"}"
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "FullScreenScreenShot" \
+            "${
+              mkKsc cfg.shortcuts.spectacle.fullscreen cfg.shortcuts.spectacle.fullscreen "Capture Entire Desktop"
+            }"
 
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "RectangularRegionScreenShot" \
-              "${mkKsc cfg.shortcuts.spectacle.rectangularRegion cfg.shortcuts.spectacle.rectangularRegion "Capture Rectangular Region"}"
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "RectangularRegionScreenShot" \
+            "${
+              mkKsc cfg.shortcuts.spectacle.rectangularRegion cfg.shortcuts.spectacle.rectangularRegion
+                "Capture Rectangular Region"
+            }"
 
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "CurrentMonitorScreenShot" \
-              "${mkKsc (if cfg.shortcuts.spectacle.currentMonitor == null then "none" else cfg.shortcuts.spectacle.currentMonitor)
-                      (if cfg.shortcuts.spectacle.currentMonitor == null then "none" else cfg.shortcuts.spectacle.currentMonitor)
-                      "Capture Current Monitor"}"
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "CurrentMonitorScreenShot" \
+            "${
+              mkKsc
+                (
+                  if cfg.shortcuts.spectacle.currentMonitor == null then
+                    "none"
+                  else
+                    cfg.shortcuts.spectacle.currentMonitor
+                )
+                (
+                  if cfg.shortcuts.spectacle.currentMonitor == null then
+                    "none"
+                  else
+                    cfg.shortcuts.spectacle.currentMonitor
+                )
+                "Capture Current Monitor"
+            }"
 
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "WindowUnderCursorScreenShot" \
-              "${mkKsc (if cfg.shortcuts.spectacle.windowUnderCursor == null then "none" else cfg.shortcuts.spectacle.windowUnderCursor)
-                      (if cfg.shortcuts.spectacle.windowUnderCursor == null then "none" else cfg.shortcuts.spectacle.windowUnderCursor)
-                      "Capture Window Under Cursor"}"
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "WindowUnderCursorScreenShot" \
+            "${
+              mkKsc
+                (
+                  if cfg.shortcuts.spectacle.windowUnderCursor == null then
+                    "none"
+                  else
+                    cfg.shortcuts.spectacle.windowUnderCursor
+                )
+                (
+                  if cfg.shortcuts.spectacle.windowUnderCursor == null then
+                    "none"
+                  else
+                    cfg.shortcuts.spectacle.windowUnderCursor
+                )
+                "Capture Window Under Cursor"
+            }"
 
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "LaunchWithoutTakingScreenshot" \
-              "${mkKsc (if cfg.shortcuts.spectacle.launchWithoutScreenshot == null then "none" else cfg.shortcuts.spectacle.launchWithoutScreenshot)
-                      (if cfg.shortcuts.spectacle.launchWithoutScreenshot == null then "none" else cfg.shortcuts.spectacle.launchWithoutScreenshot)
-                      "Launch without taking a screenshot"}"
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "LaunchWithoutTakingScreenshot" \
+            "${
+              mkKsc
+                (
+                  if cfg.shortcuts.spectacle.launchWithoutScreenshot == null then
+                    "none"
+                  else
+                    cfg.shortcuts.spectacle.launchWithoutScreenshot
+                )
+                (
+                  if cfg.shortcuts.spectacle.launchWithoutScreenshot == null then
+                    "none"
+                  else
+                    cfg.shortcuts.spectacle.launchWithoutScreenshot
+                )
+                "Launch without taking a screenshot"
+            }"
 
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "Launch" \
-              "${mkKsc (if cfg.shortcuts.spectacle.launch == null then "none" else cfg.shortcuts.spectacle.launch)
-                      (if cfg.shortcuts.spectacle.launch == null then "none" else cfg.shortcuts.spectacle.launch)
-                      "Launch"}"
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "Launch" \
+            "${
+              mkKsc (if cfg.shortcuts.spectacle.launch == null then "none" else cfg.shortcuts.spectacle.launch) (
+                if cfg.shortcuts.spectacle.launch == null then "none" else cfg.shortcuts.spectacle.launch
+              ) "Launch"
+            }"
 
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "StartStopRegionRecording" \
-              "${mkKsc cfg.shortcuts.spectacle.startStopRegionRecording cfg.shortcuts.spectacle.startStopRegionRecording "Start/Stop Region Recording"}"
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "StartStopRegionRecording" \
+            "${
+              mkKsc cfg.shortcuts.spectacle.startStopRegionRecording
+                cfg.shortcuts.spectacle.startStopRegionRecording
+                "Start/Stop Region Recording"
+            }"
 
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "StartStopScreenRecording" \
-              "${mkKsc (lib.concatStringsSep "\t" cfg.shortcuts.spectacle.startStopScreenRecording)
-                      (lib.concatStringsSep "\t" cfg.shortcuts.spectacle.startStopScreenRecording)
-                      "Start/Stop Screen Recording"}"
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "StartStopScreenRecording" \
+            "${
+              mkKsc (lib.concatStringsSep "\t" cfg.shortcuts.spectacle.startStopScreenRecording)
+                (lib.concatStringsSep "\t" cfg.shortcuts.spectacle.startStopScreenRecording)
+                "Start/Stop Screen Recording"
+            }"
 
-            ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "StartStopWindowRecording" \
-              "${mkKsc cfg.shortcuts.spectacle.startStopWindowRecording cfg.shortcuts.spectacle.startStopWindowRecording "Start/Stop Window Recording"}"
-          ''}
-
-          # ---- Yakuake ----
-          ${lib.optionalString cfg.shortcuts.yakuake.enable ''
-            ${kwriteconfig} --file kglobalshortcutsrc --group "yakuake" --key "_k_friendly_name" "Yakuake"
-            ${kwriteconfig} --file kglobalshortcutsrc --group "yakuake" --key "toggle-window-state" \
-              "${mkKsc cfg.shortcuts.yakuake.toggle cfg.shortcuts.yakuake.toggle "Open/Retract Yakuake"}"
-          ''}
+          ${kwriteconfig} --file kglobalshortcutsrc --group "org.kde.spectacle.desktop" --key "StartStopWindowRecording" \
+            "${
+              mkKsc cfg.shortcuts.spectacle.startStopWindowRecording
+                cfg.shortcuts.spectacle.startStopWindowRecording
+                "Start/Stop Window Recording"
+            }"
         ''}
 
-        ${lib.optionalString cfg.yakuake.configureWindow ''
-          # ---- Yakuake settings ----
-          ${kwriteconfig} --file yakuakerc --group Window --key Height ${toString cfg.yakuake.height}
-          ${kwriteconfig} --file yakuakerc --group Window --key Width ${toString cfg.yakuake.width}
-          ${kwriteconfig} --file yakuakerc --group Window --key X ${toString cfg.yakuake.x}
+        # ---- Yakuake ----
+        ${lib.optionalString cfg.shortcuts.yakuake.enable ''
+          ${kwriteconfig} --file kglobalshortcutsrc --group "yakuake" --key "_k_friendly_name" "Yakuake"
+          ${kwriteconfig} --file kglobalshortcutsrc --group "yakuake" --key "toggle-window-state" \
+            "${mkKsc cfg.shortcuts.yakuake.toggle cfg.shortcuts.yakuake.toggle "Open/Retract Yakuake"}"
         ''}
+      ''}
+
+      ${lib.optionalString cfg.yakuake.configureWindow ''
+        # ---- Yakuake settings ----
+        ${kwriteconfig} --file yakuakerc --group Window --key Height ${toString cfg.yakuake.height}
+        ${kwriteconfig} --file yakuakerc --group Window --key Width ${toString cfg.yakuake.width}
+        ${kwriteconfig} --file yakuakerc --group Window --key X ${toString cfg.yakuake.x}
+      ''}
 
 
 
-        ${lib.optionalString cfg.restartKglobalAccel ''
-          # Apply shortcut changes (service names vary slightly across Plasma setups).
-          systemctl --user try-restart plasma-kglobalaccel.service kglobalaccel.service kglobalacceld.service >/dev/null 2>&1 || true
-        ''}
-      '';
+      ${lib.optionalString cfg.restartKglobalAccel ''
+        # Apply shortcut changes (service names vary slightly across Plasma setups).
+        systemctl --user try-restart plasma-kglobalaccel.service kglobalaccel.service kglobalacceld.service >/dev/null 2>&1 || true
+      ''}
+    '';
   };
 }

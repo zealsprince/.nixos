@@ -39,8 +39,20 @@ in
         resources
         obsidian
         libreoffice-still
+
+        # Dropbox (Maestral) + Dolphin service-menu helper runtime deps
         maestral
         maestral-gui
+        coreutils # realpath
+        xdg-utils # xdg-open
+        libnotify # notify-send
+
+        # Clipboard helpers for "Copy Dropbox shared link (via Maestral)" Dolphin action:
+        # - Wayland: wl-copy
+        # - X11: xclip
+        wl-clipboard
+        xclip
+
         deluge
         tauon
         plezy

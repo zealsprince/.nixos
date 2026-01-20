@@ -17,5 +17,6 @@
     ./services/mullvad.nix
     ./services/ollama.nix
     ./services/virtuoso-sidetone.nix
+    ./services/samba.nix
   ];
 }

@@ -31,6 +31,13 @@ in
       # Disk usage analyzer
       kdePackages.filelight
       kdePackages.kdenetwork-filesharing
+      kdePackages.kio
+      kdePackages.kio-fuse
+      kdePackages.kio-extras
+      kdePackages.purpose
+      kdePackages.kdeconnect-kde
+      kdePackages.kaccounts-integration
+      kdePackages.kaccounts-providers
 
       # Need a calculator
       kdePackages.kalk
