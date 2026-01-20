@@ -2,6 +2,7 @@
   pkgs,
   inputs ? null,
   config,
+  lib,
   ...
 }:
 
@@ -37,6 +38,11 @@ let
       runHook postInstall
     '';
   };
+
+  # Runtime locations where Home Manager agenix materializes secrets.
+  # Prefer referencing the declared secret paths so this works across machines/users.
+  crushOpenaiKeyFile = config.age.secrets."crush-openai-api-key".path;
+  crushGeminiKeyFile = config.age.secrets."crush-gemini-api-key".path;
 in
 
 {
@@ -47,6 +53,26 @@ in
     # Override here if you want to add/remove fonts later.
     # packages = with pkgs; [ dejavu_fonts liberation_ttf freefont_ttf noto-fonts-color-emoji ];
   };
+
+  # ---------------------------------------------------------------------------
+  # Shell-only: load provider API keys from agenix-decrypted runtime files
+  #
+  # Crush does not accept file paths for `api_key`; it expects the key string.
+  # We therefore export env vars from the decrypted secret files at shell init.
+  #
+  # NOTE: We use `initContent` with a low order priority to ensure these exports
+  # happen BEFORE the `source ~/.zshrc; return` block defined in modules/home/base.nix.
+  # ---------------------------------------------------------------------------
+  programs.zsh.initContent = lib.mkOrder 400 ''
+    # agenix -> env vars for Crush
+    if [ -r "${crushOpenaiKeyFile}" ]; then
+      export OPENAI_API_KEY="$(tr -d '\n' < "${crushOpenaiKeyFile}")"
+    fi
+
+    if [ -r "${crushGeminiKeyFile}" ]; then
+      export GEMINI_API_KEY="$(tr -d '\n' < "${crushGeminiKeyFile}")"
+    fi
+  '';
 
   imports = [
     ./modules/home/base.nix
@@ -67,23 +93,37 @@ in
   ];
 
   # ---------------------------------------------------------------------------
-  # sops-nix (Home Manager): decrypt secrets at activation time (not in the store)
+  # agenix (Home Manager): decrypt secrets at activation time (not in the store)
+  #
+  # Identity configuration:
+  # - The Home Manager agenix service runs as your user, so it must be able to read
+  #   the identity file.
+  # - `/etc/ssh/ssh_host_ed25519_key` is root-only; keep a user-owned copy for HM:
+  #
+  #     sudo install -m 0400 -o zealsprince -g users \
+  #       /etc/ssh/ssh_host_ed25519_key \
+  #       /home/zealsprince/.config/agenix/identities/ssh_host_ed25519_key
+  #
+  # - This enables non-interactive decryption at activation time even if your user
+  #   SSH key is passphrase-protected.
   # ---------------------------------------------------------------------------
-  sops = {
-    defaultSopsFile = ./secrets/secrets.yaml;
+  age.identityPaths = [
+    "${config.home.homeDirectory}/.config/agenix/identities/ssh_host_ed25519_key"
+  ];
 
-    # Per-system approach: each machine has its own age keypair.
-    #
-    # This points sops-nix at the local private key file. It must exist on each
-    # system that needs to decrypt secrets.
-    age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
+  # Secrets (encrypted files in-repo)
+  # ---------------------------------------------------------------------------
+  age.secrets = {
+    "crush-openai-api-key" = {
+      file = ./secrets/crush-openai-api-key.age;
+    };
 
-    # Decrypt provider API keys for Crush at activation time.
-    secrets."crush/openai_api_key" = { };
-    secrets."crush/gemini_api_key" = { };
+    "crush-gemini-api-key" = {
+      file = ./secrets/crush-gemini-api-key.age;
+    };
   };
 
-  # Allow Home Manager's Zsh module (completions/plugins), while still using your dotfiles
+  # Allow Home Manager's Zsh module (completions/plugins/aliases), while still using your dotfiles
   # as the entrypoint via the bridge configured in `.nixos/modules/home/base.nix`.
 
   # ---------------------------------------------------------------------------
@@ -150,9 +190,9 @@ in
           base_url = "https://api.openai.com/v1";
           type = "openai";
 
-          # sops-nix writes the decrypted contents to a root-owned runtime file.
-          # This path is a plain string and won't copy the secret into the store.
-          api_key = "file:${config.sops.secrets."crush/openai_api_key".path}";
+          # Crush expects the API key value (not a file path).
+          # We export OPENAI_API_KEY from the agenix-decrypted file in your shell init below.
+          api_key = "$OPENAI_API_KEY";
 
           models = [
             {
@@ -191,9 +231,9 @@ in
           name = "Gemini";
           type = "gemini";
 
-          # sops-nix writes the decrypted contents to a root-owned runtime file.
-          # This path is a plain string and won't copy the secret into the store.
-          api_key = "file:${config.sops.secrets."crush/gemini_api_key".path}";
+          # Crush expects the API key value (not a file path).
+          # We export GEMINI_API_KEY from the agenix-decrypted file in your shell init below.
+          api_key = "$GEMINI_API_KEY";
 
           models = [
             {

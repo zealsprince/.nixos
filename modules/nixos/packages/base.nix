@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 
 {
   /*
@@ -39,6 +39,6 @@
     fzf
     zoxide
     age
-    sops
+    inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 }
