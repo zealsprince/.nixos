@@ -48,6 +48,7 @@ in
     # Common, reusable NixOS modules (kept host-agnostic)
     ../../modules/nixos/common.nix
     ../../modules/nixos/desktop/plasma6.nix
+    ../../modules/nixos/desktop/hyprland.nix
     ../../modules/nixos/programs/1password.nix
     ../../modules/nixos/security/howdy.nix
     ../../modules/nixos/services.nix
@@ -64,6 +65,7 @@ in
     # - `desktop.plasma.nix` is Plasma/KDE-specific apps/utilities
     ../../modules/nixos/packages/desktop.nix
     ../../modules/nixos/packages/desktop.plasma.nix
+    ../../modules/nixos/packages/desktop.hyprland.nix
 
     # Host-only custom (niche) packages
     ../../modules/nixos/packages/custom.nix
@@ -170,6 +172,14 @@ in
       layout = "us";
       variant = "";
     };
+  };
+
+  # Enable Hyprland alongside Plasma (selectable at SDDM login screen).
+  my.desktop.hyprland = {
+    enable = true;
+
+    # Use unstable Hyprland (requested: 0.53.1 from nixos-unstable)
+    package = pkgs-unstable.hyprland;
   };
 
   my.programs._1password = {

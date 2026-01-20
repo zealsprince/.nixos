@@ -39,6 +39,9 @@ let
     for _ in $(${seq} 1 8); do
       if ${amixer} -c "$card" sget Sidetone >/dev/null 2>&1; then
         ${amixer} -c "$card" sset Sidetone on
+        # Force a state change by setting to 0 first, as simply setting the target value
+        # sometimes fails to apply on device connection/init.
+        ${amixer} -c "$card" sset Sidetone 0
         ${amixer} -c "$card" sset Sidetone ${toString (clampLevel cfg.level)}
         exit 0
       fi
