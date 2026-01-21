@@ -39,6 +39,7 @@
     fzf
     zoxide
     age
+    zx
     inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 }

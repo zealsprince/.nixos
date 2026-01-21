@@ -48,10 +48,17 @@ in
 {
   # User-scoped fonts (Home Manager)
   my.home.fonts = {
-    # enable = true;
+    enable = true;
+    enableAllNerdFonts = false;
     # Keep the set small (DejaVu + a few nice defaults + emoji).
     # Override here if you want to add/remove fonts later.
-    # packages = with pkgs; [ dejavu_fonts liberation_ttf freefont_ttf noto-fonts-color-emoji ];
+    packages = with pkgs; [
+      dejavu_fonts
+      liberation_ttf
+      freefont_ttf
+      noto-fonts-color-emoji
+      nerd-fonts.symbols-only
+    ];
   };
 
   # ---------------------------------------------------------------------------

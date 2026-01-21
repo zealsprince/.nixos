@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
   cfg = config.my.home.fonts;
@@ -44,6 +49,20 @@ in
       '';
     };
 
+    # Installing "all Nerdfonts" is huge, so keep it opt-in.
+    #
+    # This uses the Nixpkgs `nerd-fonts` meta-package set.
+    # If you later want to restrict this, we can switch to selecting specific fonts.
+    enableAllNerdFonts = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Whether to install the full Nerd Fonts collection into your user profile.
+
+        NOTE: This is very large and will increase download size and font cache work.
+      '';
+    };
+
     # Optional external fonts directory (user-scoped).
     enableExternalDir = lib.mkOption {
       type = lib.types.bool;
@@ -85,7 +104,11 @@ in
 
   config = lib.mkIf cfg.enable {
     # Install fonts in the user profile (avoids system-wide font cache work at boot).
-    home.packages = cfg.packages;
+    home.packages =
+      cfg.packages
+      ++ lib.optionals cfg.enableAllNerdFonts [
+        pkgs.nerd-fonts
+      ];
 
     # Enable and manage user Fontconfig.
     #
@@ -96,9 +119,18 @@ in
 
       # Prefer your chosen defaults.
       defaultFonts = {
-        monospace = [ cfg.defaultMonospace "DejaVu Sans Mono" ];
-        sansSerif = [ cfg.defaultSans "DejaVu Sans" ];
-        serif = [ cfg.defaultSerif "DejaVu Serif" ];
+        monospace = [
+          cfg.defaultMonospace
+          "DejaVu Sans Mono"
+        ];
+        sansSerif = [
+          cfg.defaultSans
+          "DejaVu Sans"
+        ];
+        serif = [
+          cfg.defaultSerif
+          "DejaVu Serif"
+        ];
       };
     };
 

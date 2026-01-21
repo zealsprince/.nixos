@@ -23,38 +23,48 @@ in
       belongs in `modules/nixos/desktop/hyprland.nix`.
   */
 
+  options.my.desktop.hyprland = {
+    enableSwaync = lib.mkEnableOption "Install swaynotificationcenter (swaync) notification center";
+  };
+
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = with pkgs; [
-      # --- Status Bar ---
-      waybar
+    environment.systemPackages =
+      (with pkgs; [
+        # --- Status Bar ---
+        waybar
 
-      # --- Launcher ---
-      rofi
+        # --- Launcher ---
+        rofi
 
-      # --- Notifications ---
-      swaynotificationcenter # "swaync" - provides a nice control center
+        # --- Wallpaper ---
+        hyprpaper
 
-      # --- Wallpaper ---
-      hyprpaper
+        # --- Idle & Locking ---
+        hypridle
+        hyprlock
 
-      # --- Idle & Locking ---
-      hypridle
-      hyprlock
+        # --- Screenshot / Recording ---
+        grim # Grab images from Wayland compositor
+        slurp # Select region for grim
+        swappy # Snapshot editing tool
 
-      # --- Screenshot / Recording ---
-      grim # Grab images from Wayland compositor
-      slurp # Select region for grim
-      swappy # Snapshot editing tool
+        # --- Clipboard ---
+        wl-clipboard
+        cliphist
 
-      # --- Clipboard ---
-      wl-clipboard
-      cliphist
+        # --- Color Picker ---
+        hyprpicker
 
-      # --- Color Picker ---
-      hyprpicker
-
-      # --- System Tray Utilities ---
-      networkmanagerapplet
-    ];
+        # --- System Tray Utilities ---
+        networkmanagerapplet
+      ])
+      ++ lib.optionals cfg.enableSwaync (
+        with pkgs;
+        [
+          # --- Notifications ---
+          # NOTE: swaync competes with Plasma's notification daemon via DBus, so keep this opt-in.
+          swaynotificationcenter # "swaync" - provides a nice control center
+        ]
+      );
   };
 }

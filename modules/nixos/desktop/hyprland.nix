@@ -111,6 +111,11 @@ in
       xwayland.enable = cfg.enableXwayland;
     };
 
+    # Hyprlock PAM integration:
+    # Hyprlock needs a PAM service at /etc/pam.d/hyprlock on NixOS, otherwise it can
+    # fail to initialize/unlock with: "Pam module \"/etc/pam.d/hyprlock\" does not exist!"
+    programs.hyprlock.enable = true;
+
     # If you want this host to boot into Hyprland by default (optional),
     # you can set:
     #   services.displayManager.defaultSession = cfg.sessionName;
