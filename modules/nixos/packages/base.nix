@@ -1,4 +1,9 @@
-{ pkgs, inputs, ... }:
+{
+  pkgs,
+  pkgs-unstable,
+  inputs,
+  ...
+}:
 
 {
   /*
@@ -41,5 +46,6 @@
     age
     zx
     inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
+    pkgs-unstable.yazi
   ];
 }

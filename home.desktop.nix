@@ -13,6 +13,9 @@
 
     # WM-specific config (Plasma 6)
     ./modules/home/wm/plasma6.nix
+
+    # WM-specific config (Hyprland)
+    ./modules/home/wm/hyprland.nix
   ];
 
   # Zed Editor Theme
@@ -23,6 +26,36 @@
   # Desktop (GUI) user package set
   # ---------------------------------------------------------------------------
   my.home.packages.desktop.enable = true;
+
+  # ---------------------------------------------------------------------------
+  # Hyprland theming (consume hyprlands into ~/.config/*)
+  #
+  # This does not start Hyprland; it only links theme folders/files into place.
+  # ---------------------------------------------------------------------------
+  my.home.wm.hyprland = {
+    enable = true;
+
+    theme = {
+      enable = true;
+      # source = inputs.hyprlands + "/themes/golden-era";
+      #
+      # Or use a local path for development:
+      source = "/home/zealsprince/Projects/zealsprince/hyprlands/themes/golden-era";
+      dev.enable = true;
+
+      # hyprlands includes these folders already
+      consume = {
+        hypr = true;
+        waybar = true;
+        gtk3 = false;
+        gtk4 = false;
+        kitty = true;
+        nvim = false;
+        anyrun = true;
+        fastfetch = false;
+      };
+    };
+  };
 
   # NOTE:
   # Do NOT enable AMD-specific packages here. Keep this profile vendor-agnostic.
@@ -107,7 +140,7 @@
       configureWindow = true;
       height = 40;
       width = 50;
-      x = 0;
+      x = -1;
     };
 
     restartKglobalAccel = true;

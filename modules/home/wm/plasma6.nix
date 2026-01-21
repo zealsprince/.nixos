@@ -800,9 +800,9 @@ in
 
       ${lib.optionalString cfg.yakuake.configureWindow ''
         # ---- Yakuake settings ----
-        ${kwriteconfig} --file yakuakerc --group Window --key Height ${toString cfg.yakuake.height}
-        ${kwriteconfig} --file yakuakerc --group Window --key Width ${toString cfg.yakuake.width}
-        ${kwriteconfig} --file yakuakerc --group Window --key X ${toString cfg.yakuake.x}
+        ${kwriteconfig} --file yakuakerc --group Window --key Height -- ${toString cfg.yakuake.height}
+        ${kwriteconfig} --file yakuakerc --group Window --key Width -- ${toString cfg.yakuake.width}
+        ${kwriteconfig} --file yakuakerc --group Window --key X -- ${toString cfg.yakuake.x}
       ''}
 
 

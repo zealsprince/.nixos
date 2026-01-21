@@ -50,9 +50,12 @@ in
   my.home.fonts = {
     enable = true;
     enableAllNerdFonts = false;
+    defaultSans = "Noto Sans";
+    defaultMonospace = "DejaVu Sans Mono";
     # Keep the set small (DejaVu + a few nice defaults + emoji).
     # Override here if you want to add/remove fonts later.
     packages = with pkgs; [
+      noto-fonts
       dejavu_fonts
       liberation_ttf
       freefont_ttf
@@ -83,6 +86,7 @@ in
 
   imports = [
     ./modules/home/base.nix
+    ./modules/home/themes/theme-folder.nix
 
     # Crush (Home Manager module from NUR)
     inputs.nur.legacyPackages.x86_64-linux.repos.charmbracelet.modules.homeManager.crush

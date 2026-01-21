@@ -64,6 +64,24 @@
       url = "github:zealsprince/neko-zed-dark";
       flake = false;
     };
+
+    # -------------------------------------------------------------------------
+    # THEME INPUTS (placeholders you can swap out later)
+    #
+    # Goal:
+    # - `hyprlands`: your Hyprland themes repo (pinned via flake.lock)
+    #
+    # Live iteration:
+    # - keep a local checkout on disk (not a flake input)
+    # - point your Home Manager module at that local path when you want fast edits
+    #   (e.g. `~/Projects/hypr-themes/themes/<name>`)
+    # -------------------------------------------------------------------------
+
+    # Hyprland themes repo (raw files, not a flake)
+    hyprlands = {
+      url = "github:zealsprince/hyprlands";
+      flake = false;
+    };
   };
 
   outputs =

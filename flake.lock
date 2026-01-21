@@ -332,6 +332,22 @@
         "type": "github"
       }
     },
+    "hyprlands": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1768974237,
+        "narHash": "sha256-VOFOnuQ0GcUn5qKsOWKUCbYTQ7RBM87eqrBBuc0qs3M=",
+        "owner": "zealsprince",
+        "repo": "hyprlands",
+        "rev": "bc4b6ecf55eaabcf630446775a42b0ec102875db",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zealsprince",
+        "repo": "hyprlands",
+        "type": "github"
+      }
+    },
     "kwin-effects-forceblur": {
       "inputs": {
         "nixpkgs": [
@@ -632,6 +648,7 @@
         "agenix": "agenix",
         "dotfiles": "dotfiles",
         "home-manager": "home-manager_2",
+        "hyprlands": "hyprlands",
         "kwin-effects-forceblur": "kwin-effects-forceblur",
         "lanzaboote": "lanzaboote",
         "mio19-nurpkgs": "mio19-nurpkgs",
