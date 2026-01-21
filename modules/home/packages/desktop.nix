@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  pkgs-unstable,
   lib,
   inputs,
   ...
@@ -63,7 +64,7 @@ in
         spotify
 
         # Development tools
-        zed-editor-fhs
+        pkgs-unstable.zed-editor-fhs
         bruno
         vscode
         firefox-devedition

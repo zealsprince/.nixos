@@ -130,7 +130,10 @@
               home-manager.useUserPackages = true;
 
               # Pass inputs to home-manager modules as well (optional)
-              home-manager.extraSpecialArgs = { inherit inputs; };
+              home-manager.extraSpecialArgs = {
+                inherit inputs;
+                inherit pkgs-unstable;
+              };
 
               home-manager.backupFileExtension = "backup";
 
@@ -167,7 +170,10 @@
         zealsprince = home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
 
-          extraSpecialArgs = { inherit inputs; };
+          extraSpecialArgs = {
+            inherit inputs;
+            inherit pkgs-unstable;
+          };
 
           modules = [
             inputs.agenix.homeManagerModules.default
@@ -179,7 +185,10 @@
         zealsprince-desktop = home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
 
-          extraSpecialArgs = { inherit inputs; };
+          extraSpecialArgs = {
+            inherit inputs;
+            inherit pkgs-unstable;
+          };
 
           modules = [
             inputs.agenix.homeManagerModules.default
