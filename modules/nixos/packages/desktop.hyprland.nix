@@ -30,6 +30,9 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages =
       (with pkgs; [
+        # --- File browser ---
+        nautilus
+
         # --- Status Bar ---
         waybar
 

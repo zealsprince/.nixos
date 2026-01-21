@@ -27,8 +27,7 @@ in
     environment.systemPackages = with pkgs; [
       # KDE/Plasma utilities
       kdePackages.yakuake
-
-      # Disk usage analyzer
+      kdePackages.kwalletmanager
       kdePackages.filelight
       kdePackages.kdenetwork-filesharing
       kdePackages.kio

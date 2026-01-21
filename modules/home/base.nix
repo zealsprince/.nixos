@@ -368,6 +368,8 @@ in
           {
             commit.gpgsign = cfg.git.signCommits;
             gpg.format = cfg.git.signingFormat;
+
+            url."git@bitbucket.org:".insteadOf = "https://bitbucket.org/";
           }
 
           (lib.optionalAttrs (cfg.git.signingKey != null) {
