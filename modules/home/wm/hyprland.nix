@@ -95,22 +95,22 @@ in
           description = "Link `<theme>/kitty` into `~/.config/kitty`.";
         };
 
-        nvim = lib.mkOption {
-          type = lib.types.bool;
-          default = false;
-          description = "Link `<theme>/nvim` into `~/.config/nvim`.";
-        };
-
-        anyrun = lib.mkOption {
-          type = lib.types.bool;
-          default = false;
-          description = "Link `<theme>/anyrun` into `~/.config/anyrun`.";
-        };
-
         fastfetch = lib.mkOption {
           type = lib.types.bool;
           default = false;
           description = "Link `<theme>/fastfetch` into `~/.config/fastfetch`.";
+        };
+
+        rofi = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Link `<theme>/rofi` into `~/.config/rofi`.";
+        };
+
+        waypaper = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Link `<theme>/waypaper` into `~/.config/waypaper`.";
         };
 
         gtk3 = lib.mkOption {
@@ -201,9 +201,9 @@ in
         lib.optionalAttrs consume.hypr { "hypr" = mkDirLink "hypr"; }
         // lib.optionalAttrs consume.waybar { "waybar" = mkDirLink "waybar"; }
         // lib.optionalAttrs consume.kitty { "kitty" = mkDirLink "kitty"; }
-        // lib.optionalAttrs consume.nvim { "nvim" = mkDirLink "nvim"; }
-        // lib.optionalAttrs consume.anyrun { "anyrun" = mkDirLink "anyrun"; }
         // lib.optionalAttrs consume.fastfetch { "fastfetch" = mkDirLink "fastfetch"; }
+        // lib.optionalAttrs consume.rofi { "rofi" = mkDirLink "rofi"; }
+        // lib.optionalAttrs consume.waypaper { "waypaper" = mkDirLink "waypaper"; }
         // lib.optionalAttrs consume.gtk3 { "gtk-3.0" = mkDirLink "gtk-3.0"; }
         // lib.optionalAttrs consume.gtk4 { "gtk-4.0" = mkDirLink "gtk-4.0"; };
 
@@ -249,9 +249,9 @@ in
               lib.optionalAttrs consume.hypr { "hypr" = "hypr"; }
               // lib.optionalAttrs consume.waybar { "waybar" = "waybar"; }
               // lib.optionalAttrs consume.kitty { "kitty" = "kitty"; }
-              // lib.optionalAttrs consume.nvim { "nvim" = "nvim"; }
-              // lib.optionalAttrs consume.anyrun { "anyrun" = "anyrun"; }
               // lib.optionalAttrs consume.fastfetch { "fastfetch" = "fastfetch"; }
+              // lib.optionalAttrs consume.rofi { "rofi" = "rofi"; }
+              // lib.optionalAttrs consume.waypaper { "waypaper" = "waypaper"; }
               // lib.optionalAttrs consume.gtk3 { "gtk-3.0" = "gtk-3.0"; }
               // lib.optionalAttrs consume.gtk4 { "gtk-4.0" = "gtk-4.0"; }
               // cfg.theme.extraLinkDirs

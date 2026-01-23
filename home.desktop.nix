@@ -50,9 +50,9 @@
         gtk3 = false;
         gtk4 = false;
         kitty = true;
-        nvim = false;
-        anyrun = true;
-        fastfetch = false;
+        fastfetch = true;
+        rofi = true;
+        waypaper = true;
       };
     };
   };
@@ -140,7 +140,7 @@
       configureWindow = true;
       height = 40;
       width = 50;
-      x = -1;
+      x = -2;
     };
 
     restartKglobalAccel = true;

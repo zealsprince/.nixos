@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 
@@ -30,6 +31,7 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages =
       (with pkgs; [
+        uwsm
         # --- File browser ---
         nautilus
 
@@ -40,7 +42,10 @@ in
         rofi
 
         # --- Wallpaper ---
+        waypaper
         hyprpaper
+        mpvpaper
+        inputs.awww.packages.${pkgs.system}.awww
 
         # --- Idle & Locking ---
         hypridle
