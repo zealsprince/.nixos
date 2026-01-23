@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.my.virtualisation.winapps;
@@ -8,7 +13,8 @@ let
   escape = lib.escapeShellArg;
 
   # Generate a desktop entry for each declared app.
-  mkDesktopItem = name: app:
+  mkDesktopItem =
+    name: app:
     let
       # Exec wrapper defined below (installed into /run/current-system/sw/bin).
       execBin = "winapp-${lib.toLower (lib.replaceStrings [ " " ] [ "-" ] name)}";
@@ -26,7 +32,8 @@ let
       type = "Application";
     };
 
-  mkExecWrapper = name: app:
+  mkExecWrapper =
+    name: app:
     let
       execBin = "winapp-${lib.toLower (lib.replaceStrings [ " " ] [ "-" ] name)}";
 
@@ -55,9 +62,9 @@ let
       #
       # Note: how this mounts in Windows depends on RDP client behavior; in most
       # cases it appears as a drive under "This PC" or in the redirected devices.
-      driveArgs = lib.concatStringsSep " " (lib.mapAttrsToList
-        (driveName: hostPath: "/drive:${escape driveName},${escape hostPath}")
-        cfg.drives);
+      driveArgs = lib.concatStringsSep " " (
+        lib.mapAttrsToList (driveName: hostPath: "/drive:${escape driveName},${escape hostPath}") cfg.drives
+      );
 
       # Remote app args (optional).
       programArgs =
@@ -67,11 +74,7 @@ let
         else
           "";
 
-      workingDirArgs =
-        if remoteWorkingDir != null then
-          "/app-workdir:${escape remoteWorkingDir}"
-        else
-          "";
+      workingDirArgs = if remoteWorkingDir != null then "/app-workdir:${escape remoteWorkingDir}" else "";
 
       # Credentials: prefer NLA. You can provide user/password, but password in the
       # Nix store is a footgun; use a runtime prompt by omitting it, or use a
@@ -84,17 +87,26 @@ let
           passArg = if cfg.password != null then "/p:${escape cfg.password}" else "";
           domainArg = if cfg.domain != null then "/d:${escape cfg.domain}" else "";
         in
-        lib.concatStringsSep " " (lib.filter (s: s != "") [ userArg passArg domainArg ]);
+        lib.concatStringsSep " " (
+          lib.filter (s: s != "") [
+            userArg
+            passArg
+            domainArg
+          ]
+        );
 
       # Security args
-      secArgs = lib.concatStringsSep " " ([
-        "/cert:${cfg.certPolicy}"
-        "+clipboard"
-        "+auto-reconnect"
-        "+glyph-cache"
-        "+fonts"
-        "+aero"
-      ] ++ (lib.optionals cfg.enableAudio [ "+audio" ]));
+      secArgs = lib.concatStringsSep " " (
+        [
+          "/cert:${cfg.certPolicy}"
+          "+clipboard"
+          "+auto-reconnect"
+          "+glyph-cache"
+          "+fonts"
+          "+aero"
+        ]
+        ++ (lib.optionals cfg.enableAudio [ "+audio" ])
+      );
     in
     pkgs.writeShellScriptBin execBin ''
       set -euo pipefail
@@ -183,7 +195,12 @@ in
     };
 
     certPolicy = lib.mkOption {
-      type = lib.types.enum [ "ignore" "tofu" "ask" "deny" ];
+      type = lib.types.enum [
+        "ignore"
+        "tofu"
+        "ask"
+        "deny"
+      ];
       default = "tofu";
       description = "FreeRDP certificate handling policy.";
     };
@@ -221,78 +238,83 @@ in
     };
 
     apps = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule ({ name, ... }: {
-        options = {
-          desktopName = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = "Desktop entry display name. Defaults to the attribute name.";
-          };
+      type = lib.types.attrsOf (
+        lib.types.submodule (
+          { ... }:
+          {
+            options = {
+              desktopName = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = "Desktop entry display name. Defaults to the attribute name.";
+              };
 
-          comment = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = "Desktop entry comment/description.";
-          };
+              comment = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = "Desktop entry comment/description.";
+              };
 
-          categories = lib.mkOption {
-            type = lib.types.nullOr (lib.types.listOf lib.types.str);
-            default = null;
-            description = "Desktop entry categories.";
-          };
+              categories = lib.mkOption {
+                type = lib.types.nullOr (lib.types.listOf lib.types.str);
+                default = null;
+                description = "Desktop entry categories.";
+              };
 
-          icon = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = ''
-              Desktop entry icon name (from your icon theme) or an absolute path.
+              icon = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = ''
+                  Desktop entry icon name (from your icon theme) or an absolute path.
 
-              Tip: you can point to an extracted Windows icon file if you manage it yourself.
-            '';
-          };
+                  Tip: you can point to an extracted Windows icon file if you manage it yourself.
+                '';
+              };
 
-          remoteApp = lib.mkOption {
-            type = lib.types.bool;
-            default = true;
-            description = "Whether to use RemoteApp mode. If false, launches a full desktop RDP session.";
-          };
+              remoteApp = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Whether to use RemoteApp mode. If false, launches a full desktop RDP session.";
+              };
 
-          remoteProgram = lib.mkOption {
-            type = lib.types.str;
-            description = ''
-              RemoteApp program identifier.
+              remoteProgram = lib.mkOption {
+                type = lib.types.str;
+                description = ''
+                  RemoteApp program identifier.
 
-              Examples:
-              - "notepad"
-              - "C:\\Program Files\\Affinity\\Photo 2\\Photo.exe"
-              - "||notepad" (depends on Windows RemoteApp config)
+                  Examples:
+                  - "notepad"
+                  - "C:\\Program Files\\Affinity\\Photo 2\\Photo.exe"
+                  - "||notepad" (depends on Windows RemoteApp config)
 
-              For Affinity, you'll typically want the full EXE path.
-            '';
-          };
+                  For Affinity, you'll typically want the full EXE path.
+                '';
+              };
 
-          remoteProgramArgs = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = "Optional command-line arguments passed to the RemoteApp program.";
-          };
+              remoteProgramArgs = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = "Optional command-line arguments passed to the RemoteApp program.";
+              };
 
-          remoteWorkingDir = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = "Optional working directory for the RemoteApp program.";
-          };
+              remoteWorkingDir = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = "Optional working directory for the RemoteApp program.";
+              };
 
-          size = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = ''
-              Optional FreeRDP size argument, e.g. "1920x1080".
-              If set, overrides fullscreen/dynamic resolution defaults.
-            '';
-          };
-        };
-      }));
+              size = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = ''
+                  Optional FreeRDP size argument, e.g. "1920x1080".
+                  If set, overrides fullscreen/dynamic resolution defaults.
+                '';
+              };
+            };
+          }
+        )
+      );
       default = { };
       description = "Windows apps to expose as Linux desktop launchers.";
     };
@@ -312,13 +334,12 @@ in
 
     programs.virt-manager.enable = true;
 
-    environment.systemPackages =
-      [
-        pkgs.freerdp
-        pkgs.virt-viewer
-      ]
-      ++ (lib.mapAttrsToList mkDesktopItem cfg.apps)
-      ++ (lib.mapAttrsToList mkExecWrapper cfg.apps);
+    environment.systemPackages = [
+      pkgs.freerdp
+      pkgs.virt-viewer
+    ]
+    ++ (lib.mapAttrsToList mkDesktopItem cfg.apps)
+    ++ (lib.mapAttrsToList mkExecWrapper cfg.apps);
 
     # NAT-only is the default libvirt networking mode; no bridging is configured here.
   };
