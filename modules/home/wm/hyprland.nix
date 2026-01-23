@@ -13,8 +13,8 @@ in
     enable = lib.mkEnableOption "Hyprland (Home Manager) with theme-folder consumption";
 
     # You can point this at:
-    # - a local theme folder: ./themes/golden-era
-    # - a flake input with flake=false: inputs.hyprlands + "/themes/golden-era"
+    # - a local theme folder: ./themes/{theme}
+    # - a flake input with flake=false: inputs.hyprlands + "/themes/{theme}"
     theme = {
       enable = lib.mkEnableOption "Apply a theme folder into ~/.config (hypr/waybar/gtk/etc)";
 
@@ -32,7 +32,7 @@ in
           This module does not auto-scan directories. You choose what to link via
           `consume` and `extraLinkDirs/extraLinkFiles` below.
         '';
-        example = lib.literalExpression "./themes/golden-era";
+        example = lib.literalExpression "./themes/{theme}";
       };
 
       # Development mode: use out-of-store symlinks for live iteration.
@@ -238,6 +238,37 @@ in
 
       # xdg.configFile (standard mode):
       xdg.configFile = lib.mkIf (cfg.theme.enable && !dev) allLinks;
+
+      # Cleanup script (standard mode):
+      # When switching from dev (symlinks) to standard (store paths), we must remove
+      # the directory symlinks so Home Manager can create real directories and populate them.
+      home.activation.cleanupHyprlandThemeDev = lib.mkIf (cfg.theme.enable && !dev) (
+        lib.hm.dag.entryBefore [ "checkLinkTargets" ] (
+          let
+            # Targets that are directories in standard mode (recursive=true)
+            # but were likely symlinks in dev mode.
+            dirsToClean =
+              lib.optionalAttrs consume.hypr { "hypr" = true; }
+              // lib.optionalAttrs consume.waybar { "waybar" = true; }
+              // lib.optionalAttrs consume.kitty { "kitty" = true; }
+              // lib.optionalAttrs consume.fastfetch { "fastfetch" = true; }
+              // lib.optionalAttrs consume.rofi { "rofi" = true; }
+              // lib.optionalAttrs consume.waypaper { "waypaper" = true; }
+              // lib.optionalAttrs consume.gtk3 { "gtk-3.0" = true; }
+              // lib.optionalAttrs consume.gtk4 { "gtk-4.0" = true; }
+              // cfg.theme.extraLinkDirs;
+
+            commands = lib.mapAttrsToList (target: _: ''
+              targetPath="${config.xdg.configHome}/${target}"
+              if [ -L "$targetPath" ]; then
+                echo "Cleaning up dev-mode symlink: $targetPath"
+                $DRY_RUN_CMD rm "$targetPath"
+              fi
+            '') dirsToClean;
+          in
+          builtins.concatStringsSep "\n" commands
+        )
+      );
 
       # Activation script (dev mode):
       # Directly symlink paths to avoid the Nix store symlink chain.

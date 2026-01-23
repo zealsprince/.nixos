@@ -46,6 +46,8 @@
     age
     zx
     figlet
+    tiny
+    weechat
     pkgs-unstable.fastfetch
     inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
     pkgs-unstable.yazi

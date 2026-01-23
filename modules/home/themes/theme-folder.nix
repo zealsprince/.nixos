@@ -8,7 +8,7 @@ let
   # subfolders/files from your theme folder should be mapped into XDG config.
   #
   # This is designed to work both with:
-  # - local paths (e.g. ./themes/golden-era)
+  # - local paths (e.g. ./themes/{theme})
   # - flake inputs with `flake = false` (e.g. inputs.hyprlands)
   #
   # You typically point `source` at the root of a theme folder.
@@ -65,8 +65,8 @@ in
     #
     # Intended usage:
     #   source = inputs.hyprlands;                      # if repo structure matches
-    #   source = inputs.hyprlands + "/themes/golden-era"; # recommended theme subfolder layout
-    #   source = ./themes/golden-era;
+    #   source = inputs.hyprlands + "/themes/{theme}";  # recommended theme subfolder layout
+    #   source = ./themes/{theme};
     source = lib.mkOption {
       type = lib.types.nullOr (
         lib.types.oneOf [
@@ -84,7 +84,7 @@ in
         This can be a local path (recommended) or a string path. If you use a
         flake input, the input must be `flake = false` so it is a raw source tree.
       '';
-      example = lib.literalExpression "./themes/golden-era";
+      example = lib.literalExpression "./themes/cobalt";
     };
 
     # Directory mappings under ~/.config.

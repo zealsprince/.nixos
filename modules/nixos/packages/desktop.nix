@@ -45,6 +45,9 @@
       openrgb-with-all-plugins
       # headsetcontrol
 
+      # Desktop!
+      linux-wallpaperengine
+
       # Media / utilities commonly expected on desktop
       mpv
 

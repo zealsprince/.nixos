@@ -37,11 +37,11 @@
 
     theme = {
       enable = true;
-      # source = inputs.hyprlands + "/themes/golden-era";
-      #
+      source = inputs.hyprlands + "/themes/cobalt";
+
       # Or use a local path for development:
-      source = "/home/zealsprince/Projects/zealsprince/hyprlands/themes/golden-era";
-      dev.enable = true;
+      # source = "/home/zealsprince/Projects/zealsprince/hyprlands/themes/cobalt";
+      # dev.enable = true;
 
       # hyprlands includes these folders already
       consume = {
@@ -139,8 +139,8 @@
     yakuake = {
       configureWindow = true;
       height = 40;
-      width = 50;
-      x = -2;
+      width = 49;
+      x = -3;
     };
 
     restartKglobalAccel = true;
