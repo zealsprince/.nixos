@@ -194,6 +194,7 @@ in
       mkDirLink = subpath: {
         source = mkLink subpath;
         recursive = if dev then false else true;
+        force = true;
       };
 
       # Build an attrset of xdg.configFile directory links.
@@ -203,7 +204,7 @@ in
         // lib.optionalAttrs consume.kitty { "kitty" = mkDirLink "kitty"; }
         // lib.optionalAttrs consume.fastfetch { "fastfetch" = mkDirLink "fastfetch"; }
         // lib.optionalAttrs consume.rofi { "rofi" = mkDirLink "rofi"; }
-        // lib.optionalAttrs consume.waypaper { "waypaper" = mkDirLink "waypaper"; }
+        // lib.optionalAttrs (consume.waypaper && dev) { "waypaper" = mkDirLink "waypaper"; }
         // lib.optionalAttrs consume.gtk3 { "gtk-3.0" = mkDirLink "gtk-3.0"; }
         // lib.optionalAttrs consume.gtk4 { "gtk-4.0" = mkDirLink "gtk-4.0"; };
 
@@ -211,18 +212,26 @@ in
       extraDirLinks = lib.mapAttrs (_target: rel: {
         source = mkLink rel;
         recursive = if dev then false else true;
+        force = true;
       }) cfg.theme.extraLinkDirs;
 
       # Apply extraLinkFiles.
       extraFileLinks = lib.mapAttrs (_target: rel: {
         source = mkLink rel;
+        force = true;
       }) cfg.theme.extraLinkFiles;
 
       # Links to generate.
       allLinks =
         (lib.optionalAttrs cfg.theme.namespace.enable {
-          "hyprlands/active".source =
-            if dev then config.lib.file.mkOutOfStoreSymlink devSourcePath else cfg.theme.source;
+          "hyprlands/active" = {
+            source = if dev then config.lib.file.mkOutOfStoreSymlink devSourcePath else cfg.theme.source;
+            force = true;
+          };
+          "hyprlands/current" = {
+            source = if dev then config.lib.file.mkOutOfStoreSymlink devSourcePath else cfg.theme.source;
+            force = true;
+          };
         })
         // dirLinks
         // extraDirLinks
@@ -256,7 +265,11 @@ in
               // lib.optionalAttrs consume.waypaper { "waypaper" = true; }
               // lib.optionalAttrs consume.gtk3 { "gtk-3.0" = true; }
               // lib.optionalAttrs consume.gtk4 { "gtk-4.0" = true; }
-              // cfg.theme.extraLinkDirs;
+              // cfg.theme.extraLinkDirs
+              // (lib.optionalAttrs cfg.theme.namespace.enable {
+                "hyprlands/active" = true;
+                "hyprlands/current" = true;
+              });
 
             commands = lib.mapAttrsToList (target: _: ''
               targetPath="${config.xdg.configHome}/${target}"
@@ -267,6 +280,26 @@ in
             '') dirsToClean;
           in
           builtins.concatStringsSep "\n" commands
+        )
+      );
+
+      # Mutable Configs (Standard Mode):
+      # Some apps (Waypaper) need to write to their config files.
+      # We copy them from the theme instead of symlinking.
+      home.activation.setupMutableHyprlandConfigs = lib.mkIf (cfg.theme.enable && !dev) (
+        lib.hm.dag.entryAfter [ "linkGeneration" ] (
+          let
+            sourceDir = "${cfg.theme.source}/waypaper";
+            targetDir = "${config.xdg.configHome}/waypaper";
+          in
+          lib.optionalString consume.waypaper ''
+            if [ -d "${sourceDir}" ]; then
+              $DRY_RUN_CMD mkdir -p "${targetDir}"
+              # Copy files, overwriting existing ones to apply theme, but ensuring write permissions
+              $DRY_RUN_CMD cp -Lf --no-preserve=mode,ownership "${sourceDir}/"* "${targetDir}/"
+              $DRY_RUN_CMD chmod -R +w "${targetDir}"
+            fi
+          ''
         )
       );
 
@@ -287,7 +320,10 @@ in
               // lib.optionalAttrs consume.gtk4 { "gtk-4.0" = "gtk-4.0"; }
               // cfg.theme.extraLinkDirs
               // cfg.theme.extraLinkFiles
-              // (lib.optionalAttrs cfg.theme.namespace.enable { "hyprlands/active" = "."; });
+              // (lib.optionalAttrs cfg.theme.namespace.enable {
+                "hyprlands/active" = ".";
+                "hyprlands/current" = ".";
+              });
 
             # Generate the ln -s commands
             commands = lib.mapAttrsToList (target: srcRel: ''
@@ -295,6 +331,12 @@ in
               sourcePath="${devSourcePath}/${srcRel}"
 
               $DRY_RUN_CMD mkdir -p "$(dirname "$targetPath")"
+
+              # If target is an empty directory (leftover from standard mode), remove it so we can symlink
+              if [ -d "$targetPath" ] && [ -z "$(ls -A "$targetPath")" ]; then
+                echo "Removing empty directory $targetPath to replace with dev symlink"
+                $DRY_RUN_CMD rmdir "$targetPath"
+              fi
 
               if [ -e "$targetPath" ] && [ ! -L "$targetPath" ]; then
                 echo "WARN: $targetPath exists and is not a symlink. Skipping to protect data."
