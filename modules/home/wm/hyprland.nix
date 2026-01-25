@@ -40,36 +40,6 @@ in
         enable = lib.mkEnableOption "Use out-of-store symlinks (requires --impure)";
       };
 
-      # Theme namespace wiring:
-      #
-      # This creates:
-      #   ~/.config/hyprlands/active -> <theme folder>
-      #
-      # This is the "selected theme" pointer for humans/scripts. However, we do
-      # NOT use `~/.config/hyprlands/active/...` as a *source* for other links,
-      # because that path is a runtime user path and may not exist during Nix eval.
-      #
-      # Instead, app config entrypoints are linked directly from `theme.source/<app>`.
-      namespace = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = true;
-          description = "Create ~/.config/hyprlands/active symlink and export HYPR_THEME_* namespace env vars.";
-        };
-
-        activeSymlink = lib.mkOption {
-          type = lib.types.str;
-          default = "${config.xdg.configHome}/hyprlands/active";
-          description = "Path to the 'active theme' symlink (default: ~/.config/hyprlands/active).";
-        };
-
-        sharedDirName = lib.mkOption {
-          type = lib.types.str;
-          default = "hyprlands";
-          description = "Name of the shared directory inside a theme (default: hyprlands).";
-        };
-      };
-
       # Which parts of the theme folder to expose into canonical XDG config locations.
       #
       # These are linked directly from:
@@ -81,6 +51,12 @@ in
           type = lib.types.bool;
           default = true;
           description = "Link `<theme>/hypr` into `~/.config/hypr`.";
+        };
+
+        hyprlands = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Link `<theme>/hyprlands` into `~/.config/hyprlands`.";
         };
 
         waybar = lib.mkOption {
@@ -168,9 +144,6 @@ in
       consume = cfg.theme.consume;
       dev = cfg.theme.dev.enable;
 
-      activeSymlink = cfg.theme.namespace.activeSymlink;
-      sharedDirName = cfg.theme.namespace.sharedDirName;
-
       # Capture raw path string for dev mode to ensure no store copying happens
       devSourcePath = toString cfg.theme.source;
 
@@ -200,6 +173,7 @@ in
       # Build an attrset of xdg.configFile directory links.
       dirLinks =
         lib.optionalAttrs consume.hypr { "hypr" = mkDirLink "hypr"; }
+        // lib.optionalAttrs consume.hyprlands { "hyprlands" = mkDirLink "hyprlands"; }
         // lib.optionalAttrs consume.waybar { "waybar" = mkDirLink "waybar"; }
         // lib.optionalAttrs consume.kitty { "kitty" = mkDirLink "kitty"; }
         // lib.optionalAttrs consume.fastfetch { "fastfetch" = mkDirLink "fastfetch"; }
@@ -222,20 +196,7 @@ in
       }) cfg.theme.extraLinkFiles;
 
       # Links to generate.
-      allLinks =
-        (lib.optionalAttrs cfg.theme.namespace.enable {
-          "hyprlands/active" = {
-            source = if dev then config.lib.file.mkOutOfStoreSymlink devSourcePath else cfg.theme.source;
-            force = true;
-          };
-          "hyprlands/current" = {
-            source = if dev then config.lib.file.mkOutOfStoreSymlink devSourcePath else cfg.theme.source;
-            force = true;
-          };
-        })
-        // dirLinks
-        // extraDirLinks
-        // extraFileLinks;
+      allLinks = dirLinks // extraDirLinks // extraFileLinks;
     in
     {
       assertions = [
@@ -258,6 +219,7 @@ in
             # but were likely symlinks in dev mode.
             dirsToClean =
               lib.optionalAttrs consume.hypr { "hypr" = true; }
+              // lib.optionalAttrs consume.hyprlands { "hyprlands" = true; }
               // lib.optionalAttrs consume.waybar { "waybar" = true; }
               // lib.optionalAttrs consume.kitty { "kitty" = true; }
               // lib.optionalAttrs consume.fastfetch { "fastfetch" = true; }
@@ -265,14 +227,16 @@ in
               // lib.optionalAttrs consume.waypaper { "waypaper" = true; }
               // lib.optionalAttrs consume.gtk3 { "gtk-3.0" = true; }
               // lib.optionalAttrs consume.gtk4 { "gtk-4.0" = true; }
-              // cfg.theme.extraLinkDirs
-              // (lib.optionalAttrs cfg.theme.namespace.enable {
-                "hyprlands/active" = true;
-                "hyprlands/current" = true;
-              });
+              // cfg.theme.extraLinkDirs;
 
             commands = lib.mapAttrsToList (target: _: ''
               targetPath="${config.xdg.configHome}/${target}"
+              # Special cleanup for hyprlands transition: if it contains 'active' symlink, remove the directory
+              if [ "${target}" = "hyprlands" ] && [ -d "$targetPath" ] && ([ -L "$targetPath/active" ] || [ -L "$targetPath/current" ]); then
+                 echo "Detected old hyprlands directory structure. Removing to ensure clean generation."
+                 $DRY_RUN_CMD rm -rf "$targetPath"
+              fi
+
               if [ -L "$targetPath" ]; then
                 echo "Cleaning up dev-mode symlink: $targetPath"
                 $DRY_RUN_CMD rm "$targetPath"
@@ -311,6 +275,7 @@ in
             # Map target (relative to ~/.config) -> source (relative to theme root)
             linkMap =
               lib.optionalAttrs consume.hypr { "hypr" = "hypr"; }
+              // lib.optionalAttrs consume.hyprlands { "hyprlands" = "hyprlands"; }
               // lib.optionalAttrs consume.waybar { "waybar" = "waybar"; }
               // lib.optionalAttrs consume.kitty { "kitty" = "kitty"; }
               // lib.optionalAttrs consume.fastfetch { "fastfetch" = "fastfetch"; }
@@ -319,11 +284,7 @@ in
               // lib.optionalAttrs consume.gtk3 { "gtk-3.0" = "gtk-3.0"; }
               // lib.optionalAttrs consume.gtk4 { "gtk-4.0" = "gtk-4.0"; }
               // cfg.theme.extraLinkDirs
-              // cfg.theme.extraLinkFiles
-              // (lib.optionalAttrs cfg.theme.namespace.enable {
-                "hyprlands/active" = ".";
-                "hyprlands/current" = ".";
-              });
+              // cfg.theme.extraLinkFiles;
 
             # Generate the ln -s commands
             commands = lib.mapAttrsToList (target: srcRel: ''
@@ -332,10 +293,22 @@ in
 
               $DRY_RUN_CMD mkdir -p "$(dirname "$targetPath")"
 
+              # Special cleanup for hyprlands transition: if it contains 'active' symlink, remove the directory
+              if [ "${target}" = "hyprlands" ] && [ -d "$targetPath" ] && ([ -L "$targetPath/active" ] || [ -L "$targetPath/current" ]); then
+                 echo "Detected old hyprlands directory structure. Removing to replace with symlink."
+                 $DRY_RUN_CMD rm -rf "$targetPath"
+              fi
+
               # If target is an empty directory (leftover from standard mode), remove it so we can symlink
               if [ -d "$targetPath" ] && [ -z "$(ls -A "$targetPath")" ]; then
                 echo "Removing empty directory $targetPath to replace with dev symlink"
                 $DRY_RUN_CMD rmdir "$targetPath"
+              fi
+
+              # Special handling for waypaper: if it's a directory (from standard mode copy), backup and remove it
+              if [ "${target}" = "waypaper" ] && [ -d "$targetPath" ] && [ ! -L "$targetPath" ]; then
+                echo "Detected existing waypaper config directory. Backing up to $targetPath.backup"
+                $DRY_RUN_CMD mv "$targetPath" "$targetPath.backup"
               fi
 
               if [ -e "$targetPath" ] && [ ! -L "$targetPath" ]; then
@@ -351,26 +324,9 @@ in
       );
 
       # Export stable env vars for theme configs (Waybar/Hypr/etc.)
-      #
-      # If the namespace pointer is disabled, we still export:
-      # - HYPR_THEME_HYPRLANDS_DIR as the theme source path
-      # - HYPR_THEME_OTHER_DIR     as <theme source>/<sharedDirName>
-      home.sessionVariables = lib.mkIf cfg.theme.enable (
-        if cfg.theme.namespace.enable then
-          {
-            HYPR_THEME_HYPRLANDS_DIR = activeSymlink;
-            HYPR_THEME_OTHER_DIR = "${activeSymlink}/${sharedDirName}";
-          }
-        else
-          {
-            HYPR_THEME_HYPRLANDS_DIR = if dev then devSourcePath else toString cfg.theme.source;
-            HYPR_THEME_OTHER_DIR =
-              if dev then
-                "${devSourcePath}/${sharedDirName}"
-              else
-                "${toString cfg.theme.source}/${sharedDirName}";
-          }
-      );
+      home.sessionVariables = lib.mkIf cfg.theme.enable {
+        HYPRLANDS_THEME_DIR = if dev then devSourcePath else toString cfg.theme.source;
+      };
 
       # Optional package set.
       home.packages = lib.mkIf cfg.packages.enable (

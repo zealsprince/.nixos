@@ -139,8 +139,8 @@
     yakuake = {
       configureWindow = true;
       height = 40;
-      width = 49;
-      x = -3;
+      width = 50;
+      position = 50;
     };
 
     restartKglobalAccel = true;

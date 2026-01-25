@@ -487,10 +487,10 @@ in
         description = "Yakuake window height percentage.";
       };
 
-      x = lib.mkOption {
+      position = lib.mkOption {
         type = lib.types.int;
-        default = 0;
-        description = "Yakuake window X offset in pixels (shift right by increasing).";
+        default = 50;
+        description = "Yakuake window center position percentage.";
       };
     };
 
@@ -802,7 +802,7 @@ in
         # ---- Yakuake settings ----
         ${kwriteconfig} --file yakuakerc --group Window --key Height -- ${toString cfg.yakuake.height}
         ${kwriteconfig} --file yakuakerc --group Window --key Width -- ${toString cfg.yakuake.width}
-        ${kwriteconfig} --file yakuakerc --group Window --key X -- ${toString cfg.yakuake.x}
+        ${kwriteconfig} --file yakuakerc --group Window --key Position -- ${toString cfg.yakuake.position}
       ''}
 
 
