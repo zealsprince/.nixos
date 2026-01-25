@@ -16,6 +16,7 @@ let
     yt-dlp
     awscli2
     terraform
+    radare2
 
     # Languages that come with global packages
     nodejs_24

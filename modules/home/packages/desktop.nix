@@ -75,6 +75,10 @@ in
         godot
         love
 
+        # Reverse engineering
+        cutter
+        ghidra
+
         # Creative tools
         inputs.affinity-nix.packages.${pkgs.stdenv.hostPlatform.system}.v3
         pureref
