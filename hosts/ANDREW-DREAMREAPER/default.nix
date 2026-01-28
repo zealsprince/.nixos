@@ -111,15 +111,11 @@ in
     monitorMethod = "proc";
   };
   my.services.mullvad.enable = true;
-  my.services.ollama = {
+  services.ollama = {
     enable = true;
     package = pkgs-unstable.ollama-rocm;
     acceleration = "rocm";
-
-    # RX 6800 XT (RDNA2 / gfx1030): some ROCm stacks need an explicit override.
-    extraEnvironment = {
-      HSA_OVERRIDE_GFX_VERSION = "10.3.0";
-    };
+    rocmOverrideGfx = "10.3.0";
   };
 
   # ===========================================================================
