@@ -105,6 +105,7 @@
         import nixpkgs {
           inherit system;
           config.allowUnfree = true;
+          overlays = [ inputs.nur.overlays.default ];
         };
 
       mkPkgsUnstable =
@@ -112,6 +113,7 @@
         import nixpkgs-unstable {
           inherit system;
           config.allowUnfree = true;
+          overlays = [ inputs.nur.overlays.default ];
         };
 
       # Helper to create a standalone Home Manager configuration
@@ -246,6 +248,7 @@
 
           modules = [
             inputs.agenix.homeManagerModules.default
+            ./modules/home/crush.module.nix
             ./home.desktop.nix
             ./modules/home/crush.nix
             {
