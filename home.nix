@@ -145,8 +145,6 @@ in
   # ---------------------------------------------------------------------------
   home.file.".config/base16-shell".source = base16ShellInstalled;
 
-
-
   # ---------------------------------------------------------------------------
   # Link CLI dotfiles into $HOME (zsh, tmux, vim, and scripts)
   # ---------------------------------------------------------------------------
@@ -197,6 +195,43 @@ in
     recursive = true;
     executable = true;
   };
+
+  # ---------------------------------------------------------------------------
+  # Zed
+  # ---------------------------------------------------------------------------
+  # Mutable config: copy files and backup if changed.
+  home.activation.installZedConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    mkdir -p $HOME/.config/zed
+
+    install_mutable() {
+      local src=$1
+      local dst=$2
+
+      # Remove symlinks if they exist (cleanup from old config)
+      if [ -L "$dst" ]; then rm "$dst"; fi
+
+      if [ -e "$dst" ]; then
+        if ! cmp -s "$src" "$dst"; then
+          # File exists and content differs: backup and overwrite
+          cp "$dst" "$dst.backup"
+          cp -f "$src" "$dst"
+          chmod u+w "$dst"
+        fi
+      else
+        # File does not exist: copy and make writable
+        cp "$src" "$dst"
+        chmod u+w "$dst"
+      fi
+    }
+
+    install_mutable "${inputs.dotfiles}/zed/settings.json" "$HOME/.config/zed/settings.json"
+    install_mutable "${inputs.dotfiles}/zed/keymap.json" "$HOME/.config/zed/keymap.json"
+  '';
+
+  home.file.".config/zed/themes/neko-dark.json".source =
+    inputs.neko-zed-dark + "/themes/neko-dark.json";
+  home.file.".config/zed/themes/Matte Black Neko.json".source =
+    inputs.dotfiles + "/zed/themes/Matte Black Neko.json";
 
   # ---------------------------------------------------------------------------
   # Base (cross-platform Home Manager config)

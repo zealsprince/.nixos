@@ -100,45 +100,54 @@
     }@inputs:
     let
       # Helper to instantiate pkgs for a specific system
-      mkPkgs = system: import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
-
-      mkPkgsUnstable = system: import nixpkgs-unstable {
-        inherit system;
-        config.allowUnfree = true;
-      };
-
-      # Helper to create a standalone Home Manager configuration
-      mkHome = { system, username, modules ? [] }: home-manager.lib.homeManagerConfiguration {
-        pkgs = mkPkgs system;
-
-        extraSpecialArgs = {
-          inherit inputs;
-          pkgs-unstable = mkPkgsUnstable system;
+      mkPkgs =
+        system:
+        import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
         };
 
-        modules = [
-          inputs.agenix.homeManagerModules.default
-          # Dynamically import the NUR Crush module for the correct system
-          inputs.nur.legacyPackages.${system}.repos.charmbracelet.modules.homeManager.crush
+      mkPkgsUnstable =
+        system:
+        import nixpkgs-unstable {
+          inherit system;
+          config.allowUnfree = true;
+        };
 
-          # Main configuration
-          ./home.nix
+      # Helper to create a standalone Home Manager configuration
+      mkHome =
+        {
+          system,
+          username,
+          modules ? [ ],
+        }:
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = mkPkgs system;
 
-          # Crush configuration (extracted)
-          ./modules/home/crush.nix
+          extraSpecialArgs = {
+            inherit inputs;
+            pkgs-unstable = mkPkgsUnstable system;
+          };
 
-          # Set platform-specific details
-          {
-            my.home.base.username = username;
-            my.home.base.homeDirectory = if system == "aarch64-darwin"
-                                         then "/Users/${username}"
-                                         else "/home/${username}";
-          }
-        ] ++ modules;
-      };
+          modules = [
+            inputs.agenix.homeManagerModules.default
+            ./modules/home/crush.module.nix
+
+            # Main configuration
+            ./home.nix
+
+            # Crush configuration (extracted)
+            ./modules/home/crush.nix
+
+            # Set platform-specific details
+            {
+              my.home.base.username = username;
+              my.home.base.homeDirectory =
+                if system == "aarch64-darwin" then "/Users/${username}" else "/home/${username}";
+            }
+          ]
+          ++ modules;
+        };
     in
     {
       # -----------------------------------------------------------------------
@@ -181,6 +190,7 @@
               home-manager.users.zealsprince = {
                 imports = [
                   inputs.agenix.homeManagerModules.default
+                  ./modules/home/crush.module.nix
                   ./home.desktop.nix
                   ./modules/home/crush.nix
                 ];

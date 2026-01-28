@@ -1,13 +1,8 @@
 {
-  config,
-  pkgs,
-  lib,
-  inputs,
   ...
 }:
 
 {
-
 
   # ---------------------------------------------------------------------------
   # Crush (via NUR module): user-scoped configuration

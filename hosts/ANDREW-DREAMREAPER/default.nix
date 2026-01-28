@@ -96,15 +96,6 @@ in
     "d /ramdisk 1777 zealsprince users - -"
   ];
 
-  # Fix for broken Zed Editor tests blocking rebuilds
-  nixpkgs.overlays = [
-    (final: prev: {
-      zed-editor = prev.zed-editor.overrideAttrs (old: {
-        doCheck = false;
-      });
-    })
-  ];
-
   my.services.openlinkhub.enable = true;
   my.services.opensnitch = {
     enable = true;
