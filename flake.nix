@@ -99,13 +99,45 @@
       ...
     }@inputs:
     let
-      pkgs = import nixpkgs {
-        system = "x86_64-linux";
+      # Helper to instantiate pkgs for a specific system
+      mkPkgs = system: import nixpkgs {
+        inherit system;
         config.allowUnfree = true;
       };
-      pkgs-unstable = import nixpkgs-unstable {
-        system = "x86_64-linux";
+
+      mkPkgsUnstable = system: import nixpkgs-unstable {
+        inherit system;
         config.allowUnfree = true;
+      };
+
+      # Helper to create a standalone Home Manager configuration
+      mkHome = { system, username, modules ? [] }: home-manager.lib.homeManagerConfiguration {
+        pkgs = mkPkgs system;
+
+        extraSpecialArgs = {
+          inherit inputs;
+          pkgs-unstable = mkPkgsUnstable system;
+        };
+
+        modules = [
+          inputs.agenix.homeManagerModules.default
+          # Dynamically import the NUR Crush module for the correct system
+          inputs.nur.legacyPackages.${system}.repos.charmbracelet.modules.homeManager.crush
+
+          # Main configuration
+          ./home.nix
+
+          # Crush configuration (extracted)
+          ./modules/home/crush.nix
+
+          # Set platform-specific details
+          {
+            my.home.base.username = username;
+            my.home.base.homeDirectory = if system == "aarch64-darwin"
+                                         then "/Users/${username}"
+                                         else "/home/${username}";
+          }
+        ] ++ modules;
       };
     in
     {
@@ -114,10 +146,12 @@
       # -----------------------------------------------------------------------
       nixosConfigurations = {
         ANDREW-DREAMREAPER = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
           # Pass inputs to modules so modules can reference flake inputs when needed
           specialArgs = {
             inherit inputs;
-            inherit pkgs-unstable;
+            pkgs-unstable = mkPkgsUnstable "x86_64-linux";
           };
 
           modules = [
@@ -137,7 +171,7 @@
               # Pass inputs to home-manager modules as well (optional)
               home-manager.extraSpecialArgs = {
                 inherit inputs;
-                inherit pkgs-unstable;
+                pkgs-unstable = mkPkgsUnstable "x86_64-linux";
               };
 
               home-manager.backupFileExtension = "backup";
@@ -148,6 +182,7 @@
                 imports = [
                   inputs.agenix.homeManagerModules.default
                   ./home.desktop.nix
+                  ./modules/home/crush.nix
                 ];
 
                 # AMD-specific desktop addons (ROCm, etc.)
@@ -171,33 +206,42 @@
       # Home Manager configurations (works on NixOS and non-NixOS "nix only")
       # -----------------------------------------------------------------------
       homeConfigurations = {
-        # Base (CLI/headless-friendly) Home Manager profile.
-        zealsprince = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
+        # Linux (legacy default)
+        zealsprince = mkHome {
+          system = "x86_64-linux";
+          username = "zealsprince";
+        };
 
-          extraSpecialArgs = {
-            inherit inputs;
-            inherit pkgs-unstable;
-          };
+        # macOS (Apple Silicon) - Autodetected by hostname if you use `home-manager switch --flake .`
+        "andrew@ANDREW-PRO" = mkHome {
+          system = "aarch64-darwin";
+          username = "andrew";
+        };
 
-          modules = [
-            inputs.agenix.homeManagerModules.default
-            ./home.nix
-          ];
+        # Explicit macOS target
+        zealsprince-mac = mkHome {
+          system = "aarch64-darwin";
+          username = "andrew";
         };
 
         # Desktop Home Manager profile (GUI + WM + desktop package sets).
+        # Typically used on Linux.
         zealsprince-desktop = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
+          pkgs = mkPkgs "x86_64-linux";
 
           extraSpecialArgs = {
             inherit inputs;
-            inherit pkgs-unstable;
+            pkgs-unstable = mkPkgsUnstable "x86_64-linux";
           };
 
           modules = [
             inputs.agenix.homeManagerModules.default
             ./home.desktop.nix
+            ./modules/home/crush.nix
+            {
+              my.home.base.username = "zealsprince";
+              my.home.base.homeDirectory = "/home/zealsprince";
+            }
           ];
         };
       };

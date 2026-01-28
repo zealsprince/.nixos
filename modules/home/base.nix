@@ -17,7 +17,8 @@ let
 
   # Ensure gpg-agent knows which pinentry to use.
   # Prefer a deterministic absolute store path (works in pure/pinned environments).
-  pinentryQt = lib.getExe pkgs.pinentry-qt;
+  pinentryPackage = if pkgs.stdenv.isDarwin then pkgs.pinentry_mac else pkgs.pinentry-qt;
+  pinentryProgram = lib.getExe pinentryPackage;
 
   # Used by SSH matchBlocks below; keep it overridable and cross-platform.
   onePasswordAgentSockDefault = "~/.1password/agent.sock";
@@ -57,19 +58,19 @@ in
 
     username = lib.mkOption {
       type = lib.types.str;
-      default = config.home.username or "zealsprince";
+      default = "zealsprince";
       description = "Username for the Home Manager profile.";
     };
 
     homeDirectory = lib.mkOption {
       type = lib.types.str;
-      default = config.home.homeDirectory or "/home/${cfg.username}";
+      default = "/home/${cfg.username}";
       description = "Home directory for the Home Manager profile.";
     };
 
     stateVersion = lib.mkOption {
       type = lib.types.str;
-      default = config.home.stateVersion or "25.11";
+      default = "25.11";
       description = "Home Manager state version.";
     };
 
@@ -228,15 +229,17 @@ in
         direnv
         nix-direnv
 
+      ])
+      ++ (lib.optionals pkgs.stdenv.isLinux (with pkgs; [
         # Audio CLI utilities (for discovering/setting mic monitor/sidetone)
         alsa-utils # provides `amixer`
         pulseaudio # provides `pactl` (works with PipeWire's PulseAudio compatibility too)
-      ])
+      ]))
       ++ (lib.optionals (cfg.git.enable && cfg.git.installGpg && cfg.git.signingFormat == "openpgp") (
         with pkgs;
         [
           gnupg
-          pinentry-qt
+          pinentryPackage
         ]
       ))
       # Provide Zsh plugin binaries/assets via Nix so dotfiles don't need to clone.
@@ -288,12 +291,12 @@ in
       enable = true;
 
       # Make sure the agent uses a functional pinentry implementation.
-      pinentry.package = pkgs.pinentry-qt;
+      pinentry.package = pinentryPackage;
 
       # Allow loopback for cases where gpg is invoked with --pinentry-mode loopback.
       # This commonly helps with non-GUI/remote/TTY scenarios.
       extraConfig = ''
-        pinentry-program ${pinentryQt}
+        pinentry-program ${pinentryProgram}
         allow-loopback-pinentry
       '';
     };
@@ -344,7 +347,11 @@ in
     # =========================================================================
     programs.git = lib.mkIf cfg.git.enable (
       let
-        opSshSign = lib.getExe' pkgs._1password-gui "op-ssh-sign";
+        opSshSign =
+          if pkgs.stdenv.isDarwin then
+            "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+          else
+            lib.getExe' pkgs._1password-gui "op-ssh-sign";
       in
       {
         enable = true;
