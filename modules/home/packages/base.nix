@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 
@@ -11,6 +12,7 @@ let
   baseEnabled = config.my.home.base.enable or false;
 
   basePkgs = with pkgs; [
+    inputs.agenix.packages.${pkgs.system}.default
     eza
     gh
     yt-dlp
