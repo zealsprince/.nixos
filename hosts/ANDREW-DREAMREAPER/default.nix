@@ -99,7 +99,7 @@ in
   my.services.openlinkhub.enable = true;
   my.services.opensnitch = {
     enable = true;
-    monitorMethod = "proc";
+    monitorMethod = "ebpf";
   };
   my.services.mullvad.enable = true;
   services.ollama = {
@@ -318,6 +318,14 @@ in
       background = "${sddmBackgroundImage}"
     '')
   ];
+
+  # Symlink the kernel-specific OpenSnitch eBPF modules so the daemon finds them.
+  environment.etc."opensnitchd/opensnitch.o".source =
+    "${pkgs.linuxPackages_latest.opensnitch-ebpf}/etc/opensnitchd/opensnitch.o";
+  environment.etc."opensnitchd/opensnitch-procs.o".source =
+    "${pkgs.linuxPackages_latest.opensnitch-ebpf}/etc/opensnitchd/opensnitch-procs.o";
+  environment.etc."opensnitchd/opensnitch-dns.o".source =
+    "${pkgs.linuxPackages_latest.opensnitch-ebpf}/etc/opensnitchd/opensnitch-dns.o";
 
   # Ensure the user exists on this host (can be moved to a reusable "profile"
   # module later if multi-user support is needed).
