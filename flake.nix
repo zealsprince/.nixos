@@ -225,7 +225,7 @@
         };
 
         # macOS (Apple Silicon) - Autodetected by hostname if you use `home-manager switch --flake .`
-        "andrew@ANDREW-PRO" = mkHome {
+        andrew = mkHome {
           system = "aarch64-darwin";
           username = "andrew";
         };

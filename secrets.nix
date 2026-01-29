@@ -18,10 +18,14 @@ let
 
   # Example (this machine's host key):
   andrew-dreamreaper = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHaYgXOagy0ccreHCp594ximYRulEr6XzbouLvHSM1fz root@ANDREW-DREAMREAPER";
+  andrew-pro = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPMUr6c6rKawssNQ/qs4pgP/0kt4V4zKHuMUJ/I1JawF andrew@ANDREW-PRO.local";
 
   # Convenience groups
   admins = [ zealsprince ];
-  hosts = [ andrew-dreamreaper ];
+  hosts = [
+    andrew-dreamreaper
+    andrew-pro
+  ];
 
   # For local use you typically want both:
   crushRecipients = admins ++ hosts;

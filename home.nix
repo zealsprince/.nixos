@@ -64,6 +64,14 @@ in
     ];
   };
 
+  nix = {
+    package = pkgs.nix;
+    settings.experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
+  };
+
   # ---------------------------------------------------------------------------
   # Shell-only: load provider API keys from agenix-decrypted runtime files
   #
