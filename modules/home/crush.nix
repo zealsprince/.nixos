@@ -121,20 +121,36 @@ in
 
   # Generate the final config file at activation time using secrets
   home.activation.createCrushConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    mkdir -p "$HOME/.config/crush"
+    targetDir="$HOME/.config/crush"
+    targetFile="$targetDir/crush.json"
+
+    if [ -L "$targetDir" ]; then
+      rm "$targetDir"
+    elif [ -e "$targetDir" ] && [ ! -d "$targetDir" ]; then
+      rm -f "$targetDir"
+    fi
+
+    mkdir -p "$targetDir"
+
+    if [ -L "$targetFile" ] || [ -e "$targetFile" ]; then
+      rm -f "$targetFile"
+    fi
 
     if [ -f "${openaiSecret}" ] && [ -f "${geminiSecret}" ]; then
-      OPENAI_KEY=$(cat "${openaiSecret}")
-      GEMINI_KEY=$(cat "${geminiSecret}")
+      OPENAI_KEY=$(tr -d '\n' < "${openaiSecret}")
+      GEMINI_KEY=$(tr -d '\n' < "${geminiSecret}")
+
+      tmpFile="$(mktemp)"
 
       # Replace placeholders with actual keys
       # using | as delimiter to assume keys don't contain pipes
       cat "${configFileTemplate}" \
         | sed "s|@OPENAI_API_KEY@|$OPENAI_KEY|g" \
         | sed "s|@GEMINI_API_KEY@|$GEMINI_KEY|g" \
-        > "$HOME/.config/crush/crush.json"
+        > "$tmpFile"
 
-      chmod 600 "$HOME/.config/crush/crush.json"
+      install -m600 "$tmpFile" "$targetFile"
+      rm -f "$tmpFile"
     else
       echo "WARNING: Crush secrets not found. Skipping config generation."
     fi
