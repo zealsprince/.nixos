@@ -511,6 +511,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-ollama": {
+      "locked": {
+        "lastModified": 1769078526,
+        "narHash": "sha256-FMlrqvSq3kKZJ9JDOUp8mb+uds0K8VWcmG2LfM0GIQo=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "a6eca83ac1d16ba3140eeebe3771cc6fa1619ac7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "a6eca83ac1d16ba3140eeebe3771cc6fa1619ac7",
+        "type": "github"
+      }
+    },
     "nixpkgs-unstable": {
       "locked": {
         "lastModified": 1769461804,
@@ -694,6 +710,7 @@
         "neko-zed-dark": "neko-zed-dark",
         "nixpkgs": "nixpkgs_5",
         "nixpkgs-howdy": "nixpkgs-howdy",
+        "nixpkgs-ollama": "nixpkgs-ollama",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nur": "nur",
         "zen-browser": "zen-browser"

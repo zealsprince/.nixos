@@ -8,6 +8,10 @@
     # Unstable for bleeding-edge packages (e.g. newer Ollama)
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # Specific input for pinning Ollama (use a commit hash for 'url')
+    # FIXME: We're pegged at 0.14.1 because later versions currently break models.
+    nixpkgs-ollama.url = "github:nixos/nixpkgs/a6eca83ac1d16ba3140eeebe3771cc6fa1619ac7"; # 0.14.1
+
     _1password-shell-plugins.url = "github:1Password/shell-plugins";
 
     # Home Manager, following the same release version
@@ -94,6 +98,7 @@
       self,
       nixpkgs,
       nixpkgs-unstable,
+      nixpkgs-ollama,
       lanzaboote,
       home-manager,
       ...
@@ -116,6 +121,13 @@
           overlays = [ inputs.nur.overlays.default ];
         };
 
+      mkPkgsOllama =
+        system:
+        import nixpkgs-ollama {
+          inherit system;
+          config.allowUnfree = true;
+        };
+
       # Helper to create a standalone Home Manager configuration
       mkHome =
         {
@@ -129,6 +141,7 @@
           extraSpecialArgs = {
             inherit inputs;
             pkgs-unstable = mkPkgsUnstable system;
+            pkgs-ollama = mkPkgsOllama system;
           };
 
           modules = [
@@ -163,6 +176,7 @@
           specialArgs = {
             inherit inputs;
             pkgs-unstable = mkPkgsUnstable "x86_64-linux";
+            pkgs-ollama = mkPkgsOllama "x86_64-linux";
           };
 
           modules = [
@@ -183,6 +197,7 @@
               home-manager.extraSpecialArgs = {
                 inherit inputs;
                 pkgs-unstable = mkPkgsUnstable "x86_64-linux";
+                pkgs-ollama = mkPkgsOllama "x86_64-linux";
               };
 
               home-manager.backupFileExtension = "backup";
@@ -244,6 +259,7 @@
           extraSpecialArgs = {
             inherit inputs;
             pkgs-unstable = mkPkgsUnstable "x86_64-linux";
+            pkgs-ollama = mkPkgsOllama "x86_64-linux";
           };
 
           modules = [

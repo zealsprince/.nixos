@@ -2,6 +2,7 @@
   lib,
   pkgs,
   pkgs-unstable,
+  pkgs-ollama,
   ...
 }:
 
@@ -104,7 +105,7 @@ in
   my.services.mullvad.enable = true;
   services.ollama = {
     enable = true;
-    package = pkgs-unstable.ollama-rocm;
+    package = pkgs-ollama.ollama-rocm;
     acceleration = "rocm";
     rocmOverrideGfx = "10.3.0";
   };
