@@ -405,6 +405,12 @@ in
   hardware.sane.extraBackends = with pkgs; [
     sane-airscan
     hplipWithPlugin
+    epkowa
+    utsushi
+  ];
+
+  services.udev.packages = with pkgs; [
+    utsushi
   ];
 
   # Printing (CUPS)

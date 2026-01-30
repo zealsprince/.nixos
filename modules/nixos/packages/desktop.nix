@@ -50,6 +50,7 @@
 
       # Media / utilities commonly expected on desktop
       mpv
+      simple-scan
 
       # Security
       opensnitch
