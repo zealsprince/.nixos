@@ -9,8 +9,8 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
     # Specific input for pinning Ollama (use a commit hash for 'url')
-    # FIXME: We're pegged at 0.14.1 because later versions currently break models.
-    nixpkgs-ollama.url = "github:nixos/nixpkgs/a6eca83ac1d16ba3140eeebe3771cc6fa1619ac7"; # 0.14.1
+    # FIXME: We're pegged at 0.14.3 because later versions currently break older models.
+    nixpkgs-ollama.url = "github:nixos/nixpkgs/a6eca83ac1d16ba3140eeebe3771cc6fa1619ac7"; # 0.14.3
 
     _1password-shell-plugins.url = "github:1Password/shell-plugins";
 
