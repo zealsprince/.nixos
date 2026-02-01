@@ -466,6 +466,21 @@ in
     ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1b1c", ATTR{idProduct}=="0a49", TAG+="systemd", ENV{SYSTEMD_WANTS}+="virtuoso-sidetone.service"
   '';
 
+  # ===========================================================================
+  # Workaround: TeamSpeak 3 cancels shutdown
+  # ===========================================================================
+  # TeamSpeak 3 sometimes cancels the shutdown sequence (e.g. "Warn on close" dialog).
+  # We register a service to kill it when the shutdown target is reached.
+  systemd.services.kill-teamspeak-on-shutdown = {
+    description = "Kill TeamSpeak 3 before shutdown";
+    wantedBy = [ "shutdown.target" ];
+    before = [ "shutdown.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.procps}/bin/pkill -f ts3client || true";
+    };
+  };
+
   # Keep state version pinned per-host.
   system.stateVersion = "25.11";
 }

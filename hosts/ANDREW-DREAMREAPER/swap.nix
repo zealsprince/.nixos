@@ -73,6 +73,7 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      TimeoutStopSec = "500ms";
 
       # Startup: Clean -> Open -> Format -> Enable
       ExecStart = pkgs.writeShellScript "enable-cryptswap" ''
