@@ -45,9 +45,6 @@ in
     # Start this unit when swap.target is requested
     wantedBy = [ "swap.target" ];
 
-    # Ensure we run before swap.target tells the system "swap is ready"
-    before = [ "swap.target" ];
-
     # Ensure we stop before systemd-udevd (by starting after it), so cryptsetup
     # can communicate with udevd during teardown.
     after = [ "systemd-udevd.service" ];

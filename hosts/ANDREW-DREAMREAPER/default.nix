@@ -30,6 +30,11 @@ in
     "net.ipv4.ip_forward" = 1;
   };
 
+  # Disable hibernation (suspend-to-disk) since we use ephemeral encrypted swap.
+  # The swap key is randomized on every boot, so resuming is impossible.
+  systemd.targets.hibernate.enable = false;
+  systemd.targets.hybrid-sleep.enable = false;
+
   imports = [
     ./hardware-configuration.nix
 
