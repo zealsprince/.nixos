@@ -482,7 +482,7 @@ in
     before = [ "shutdown.target" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.procps}/bin/pkill -f ts3client || true";
+      ExecStart = "${pkgs.procps}/bin/pkill -9 -f ts3client || true";
     };
   };
 
