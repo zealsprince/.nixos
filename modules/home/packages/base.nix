@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  pkgs-unstable,
   inputs,
   ...
 }:
@@ -15,7 +16,7 @@ let
     inputs.agenix.packages.${pkgs.system}.default
     eza
     gh
-    yt-dlp
+    pkgs-unstable.yt-dlp
     awscli2
     terraform
     radare2

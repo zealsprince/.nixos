@@ -94,13 +94,15 @@ in
         # Social & Work
         hexchat
         ferdium
-        discord
+        pkgs-unstable.discord
         teamspeak3
-        teams-for-linux
+        pkgs-unstable.teams-for-linux
         slack
 
-        # Streaming
-        obs-studio
+        # Streaming & Recording
+        pkgs-unstable.obs-studio
+        gopro-tool
+        gpu-screen-recorder-gtk
 
         # Gaming & Wine
         heroic

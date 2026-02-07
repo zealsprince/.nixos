@@ -299,6 +299,9 @@ in
   # Steam (host needs 32-bit OpenGL/Vulkan userspace for Steam + many games)
   programs.steam.enable = true;
 
+  # Enable GPU Screen Recorder. You'll probably want to include the GTK package as well in your desktop packages.
+  programs.gpu-screen-recorder.enable = true;
+
   # OpenRGB: enable AMD SMBus driver support for this host
   hardware.openrgb.motherboard = "amd";
 
