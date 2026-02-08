@@ -102,6 +102,7 @@ in
         # Streaming & Recording
         pkgs-unstable.obs-studio
         gopro-tool
+        gpu-screen-recorder
         gpu-screen-recorder-gtk
 
         # Gaming & Wine

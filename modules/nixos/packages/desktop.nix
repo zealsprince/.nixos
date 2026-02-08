@@ -58,6 +58,9 @@
 
       # PipeWire patchbay (visual audio routing)
       qpwgraph
+      open-music-kontrollers.patchmatrix
+      easyeffects
+      pipewire
 
       # Terminal emulators (desktop preference)
       alacritty
