@@ -29,6 +29,19 @@ in
   # Install PowerShell itself
   home.packages = [ pkgs.powershell ];
 
+  # Terraposh configuration
+  home.file.".terraposh.config.json".text = ''
+    {
+      "CreateHardLink": true,
+      "TF_CLI_ARGS_init": "-backend=true -backend-config=backend-configs/local.tfvars -reconfigure -upgrade",
+      "TF_CLI_ARGS_plan": "-detailed-exitcode -parallelism=20 -out=.terraform/plan.bin -var-file=var-files/local.tfvars",
+      "TF_CLI_ARGS_apply": "-parallelism=20 .terraform/plan.bin",
+      "TF_CLI_ARGS_destroy": "-parallelism=20 -var-file=var-files/local.tfvars",
+      "TF_CLI_ARGS_fmt": "-recursive",
+      "TF_CLI_ARGS_output": "-json"
+    }
+  '';
+
   # Configure the profile manually via XDG config
   # PowerShell on Linux looks for the profile at ~/.config/powershell/Microsoft.PowerShell_profile.ps1
   xdg.configFile."powershell/Microsoft.PowerShell_profile.ps1".text = ''
