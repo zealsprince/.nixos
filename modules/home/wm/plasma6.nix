@@ -497,7 +497,15 @@ in
     restartKglobalAccel = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether to try restarting Plasma's global shortcut daemon after writing shortcuts.";
+      description = "Whether to restart kglobalaccel after updating shortcuts.";
+    };
+
+    session = {
+      excludeApps = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ "ts3client" ];
+        description = "List of applications (WM classes) to exclude from session management.";
+      };
     };
   };
 
@@ -542,6 +550,7 @@ in
           Exec=${maestralCopySharelink}/bin/maestral-copy-sharelink %f;
         '';
       }
+
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.yakuake.enable) {
         ".config/autostart/yakuake.desktop".text = mkAutostartDesktop {
           name = "Dropdown Terminal (Yakuake)";
@@ -685,6 +694,9 @@ in
     home.activation.configurePlasma6 = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       set -e
 
+      # ---- Session Management ----
+      ${kwriteconfig} --file ksmserverrc --group General --key excludeApps "${lib.concatStringsSep "," cfg.session.excludeApps}"
+
       ${lib.optionalString cfg.shortcuts.enable ''
         # ---- Spectacle ----
         ${lib.optionalString cfg.shortcuts.spectacle.enable ''
@@ -796,6 +808,8 @@ in
           ${kwriteconfig} --file kglobalshortcutsrc --group "yakuake" --key "toggle-window-state" \
             "${mkKsc cfg.shortcuts.yakuake.toggle cfg.shortcuts.yakuake.toggle "Open/Retract Yakuake"}"
         ''}
+
+
       ''}
 
       ${lib.optionalString cfg.yakuake.configureWindow ''
@@ -808,6 +822,9 @@ in
 
 
       ${lib.optionalString cfg.restartKglobalAccel ''
+        # Ensure the new desktop file is indexed so the shortcuts can be attached to it
+        ${pkgs.kdePackages.kservice}/bin/kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
+
         # Apply shortcut changes (service names vary slightly across Plasma setups).
         systemctl --user try-restart plasma-kglobalaccel.service kglobalaccel.service kglobalacceld.service >/dev/null 2>&1 || true
       ''}

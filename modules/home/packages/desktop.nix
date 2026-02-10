@@ -101,9 +101,8 @@ in
 
         # Streaming & Recording
         pkgs-unstable.obs-studio
+        webcamoid
         gopro-tool
-        gpu-screen-recorder
-        gpu-screen-recorder-gtk
 
         # Gaming & Wine
         heroic

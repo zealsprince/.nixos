@@ -102,6 +102,19 @@ in
     "d /ramdisk 1777 zealsprince users - -"
   ];
 
+  # Workaround: TeamSpeak 3 blocks logout/shutdown via session manager.
+  # We unset SESSION_MANAGER so it doesn't register itself.
+  nixpkgs.overlays = [
+    (final: prev: {
+      teamspeak3 = prev.teamspeak3.overrideAttrs (old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.makeWrapper ];
+        postInstall = (old.postInstall or "") + ''
+          wrapProgram $out/bin/ts3client --unset SESSION_MANAGER
+        '';
+      });
+    })
+  ];
+
   my.services.openlinkhub.enable = true;
   my.services.opensnitch = {
     enable = true;
@@ -479,10 +492,24 @@ in
   # ===========================================================================
   # TeamSpeak 3 sometimes cancels the shutdown sequence (e.g. "Warn on close" dialog).
   # We register a service to kill it when the shutdown target is reached.
+  # IMPORTANT: You'll also want to remove the "disconnect" notification sound.
   systemd.services.kill-teamspeak-on-shutdown = {
     description = "Kill TeamSpeak 3 before shutdown";
-    wantedBy = [ "shutdown.target" ];
-    before = [ "shutdown.target" ];
+    wantedBy = [
+      "halt.target"
+      "reboot.target"
+      "shutdown.target"
+      "poweroff.target"
+    ];
+    before = [
+      "halt.target"
+      "reboot.target"
+      "shutdown.target"
+      "poweroff.target"
+    ];
+    unitConfig = {
+      DefaultDependencies = false;
+    };
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.procps}/bin/pkill -9 -f ts3client || true";

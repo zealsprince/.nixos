@@ -56,10 +56,15 @@
       opensnitch
       mullvad-vpn
 
+      # Recording
+      gpu-screen-recorder
+      gpu-screen-recorder-gtk
+
       # PipeWire patchbay (visual audio routing)
       qpwgraph
       open-music-kontrollers.patchmatrix
       easyeffects
+      deepfilternet
       pipewire
 
       # Terminal emulators (desktop preference)

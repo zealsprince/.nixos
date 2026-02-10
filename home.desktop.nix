@@ -1,5 +1,20 @@
-{ inputs, ... }:
+{ inputs, pkgs, ... }:
 
+let
+  gsrNotify = pkgs.writeShellScript "gsr-notify" ''
+    VIDEO=$1
+    MODE=$2
+
+    case "$MODE" in
+      "replay") MSG="Replay saved" ;;
+      "regular") MSG="Recording saved" ;;
+      "screenshot") MSG="Screenshot saved" ;;
+      *) MSG="Saved" ;;
+    esac
+
+    ${pkgs.libnotify}/bin/notify-send -a "GPU Screen Recorder" "$MSG" "$VIDEO"
+  '';
+in
 {
   imports = [
     # Base (CLI/portable) profile
@@ -144,5 +159,26 @@
     };
 
     restartKglobalAccel = true;
+  };
+
+  # Manual Shortcuts (Plasma):
+  #   Alt+F9  : systemctl --user kill --signal=SIGRTMIN gpu-screen-recorder-replay  (Toggle Recording)
+  #   Alt+F10 : systemctl --user kill --signal=SIGUSR1 gpu-screen-recorder-replay   (Save Replay)
+  systemd.user.services.gpu-screen-recorder-replay = {
+    Unit = {
+      Description = "GPU Screen Recorder replay buffer";
+      After = [ "graphical-session.target" ];
+      Wants = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/Videos/replays %h/Videos/recordings";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'if [ -x /run/wrappers/bin/gpu-screen-recorder ]; then exec /run/wrappers/bin/gpu-screen-recorder \"$@\"; else exec ${pkgs.gpu-screen-recorder}/bin/gpu-screen-recorder \"$@\"; fi' -- -v no -w portal -restore-portal-session yes -c mp4 -k hevc_hdr -cr full -f 120 -r 120 -o %h/Videos/replays -ro %h/Videos/recordings -a default_output -a default_input -sc ${gsrNotify}";
+      KillSignal = "SIGINT";
+      Restart = "on-failure";
+      RestartSec = "5s";
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
   };
 }

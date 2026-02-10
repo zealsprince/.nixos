@@ -167,9 +167,9 @@ in
           "default.clock.rate" = 48000;
 
           # Quantum (buffer size) in frames
-          "default.clock.quantum" = 256;
-          "default.clock.min-quantum" = 128;
-          "default.clock.max-quantum" = 512;
+          "default.clock.quantum" = 1024;
+          "default.clock.min-quantum" = 512;
+          "default.clock.max-quantum" = 2048;
         };
       };
 
@@ -178,9 +178,9 @@ in
       extraConfig.pipewire-pulse."92-low-latency" = {
         "context.properties" = {
           "default.clock.rate" = 48000;
-          "default.clock.quantum" = 256;
-          "default.clock.min-quantum" = 128;
-          "default.clock.max-quantum" = 512;
+          "default.clock.quantum" = 1024;
+          "default.clock.min-quantum" = 512;
+          "default.clock.max-quantum" = 2048;
         };
       };
     };
