@@ -1,5 +1,4 @@
 {
-  lib,
   appimageTools,
   fetchurl,
   makeDesktopItem,
@@ -42,7 +41,7 @@ appimageTools.wrapType2 {
     install -Dm444 ${appimageContents}/*.png $out/share/icons/hicolor/512x512/apps/spotiflac.png
   '';
 
-  meta = with lib; {
+  meta = {
     description = "Download Spotify songs in FLAC quality using Deezer";
     homepage = "https://github.com/afkarxyz/SpotiFLAC";
     platforms = [ "x86_64-linux" ];
