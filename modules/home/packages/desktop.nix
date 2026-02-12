@@ -9,6 +9,7 @@
 
 let
   plezy = inputs.mio19-nurpkgs.packages.${pkgs.stdenv.hostPlatform.system}.plezy;
+  spotiflac = pkgs.callPackage ../../../pkgs/spotiflac/default.nix { };
 in
 
 let
@@ -62,6 +63,7 @@ in
 
         # Hate it but I need it
         spotify
+        spotiflac
 
         # Development tools
         pkgs-unstable.zed-editor-fhs
