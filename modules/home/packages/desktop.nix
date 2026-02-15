@@ -8,7 +8,6 @@
 }:
 
 let
-  plezy = inputs.mio19-nurpkgs.packages.${pkgs.stdenv.hostPlatform.system}.plezy;
   spotiflac = pkgs.callPackage ../../../pkgs/spotiflac/default.nix { };
 in
 
@@ -57,7 +56,7 @@ in
 
         deluge
         tauon
-        plezy
+        pkgs-unstable.plezy
         opensnitch-ui
         syncthing
 
