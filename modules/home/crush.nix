@@ -121,6 +121,10 @@ in
 
   # Generate the final config file at activation time using secrets
   home.activation.createCrushConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    # Ensure XDG_RUNTIME_DIR is set, as some tools (like mktemp) might require it
+    # and the activation script runs with 'set -u'
+    export XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
     targetDir="$HOME/.config/crush"
     targetFile="$targetDir/crush.json"
 

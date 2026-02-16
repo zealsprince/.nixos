@@ -146,7 +146,8 @@
 
           modules = [
             inputs.agenix.homeManagerModules.default
-            ./modules/home/crush.module.nix
+            inputs.nur.modules.homeManager.default
+            inputs.nur.legacyPackages.${system}.repos.charmbracelet.modules.homeManager.crush
 
             # Main configuration
             ./home.nix
@@ -207,7 +208,8 @@
               home-manager.users.zealsprince = {
                 imports = [
                   inputs.agenix.homeManagerModules.default
-                  ./modules/home/crush.module.nix
+                  inputs.nur.modules.homeManager.default
+                  inputs.nur.legacyPackages.x86_64-linux.repos.charmbracelet.modules.homeManager.crush
                   ./home.desktop.nix
                   ./modules/home/crush.nix
                 ];
@@ -264,7 +266,8 @@
 
           modules = [
             inputs.agenix.homeManagerModules.default
-            ./modules/home/crush.module.nix
+            inputs.nur.modules.homeManager.default
+            inputs.nur.legacyPackages.x86_64-linux.repos.charmbracelet.modules.homeManager.crush
             ./home.desktop.nix
             ./modules/home/crush.nix
             {
