@@ -110,7 +110,20 @@
         import nixpkgs {
           inherit system;
           config.allowUnfree = true;
-          overlays = [ inputs.nur.overlays.default ];
+          overlays = [
+            inputs.nur.overlays.default
+            (final: prev: {
+              inetutils =
+                if prev.stdenv.hostPlatform.isDarwin then
+                  prev.inetutils.overrideAttrs (old: {
+                    NIX_CFLAGS_COMPILE = (old.NIX_CFLAGS_COMPILE or [ ]) ++ [
+                      "-Wno-error=format-security"
+                    ];
+                  })
+                else
+                  prev.inetutils;
+            })
+          ];
         };
 
       mkPkgsUnstable =
@@ -118,7 +131,20 @@
         import nixpkgs-unstable {
           inherit system;
           config.allowUnfree = true;
-          overlays = [ inputs.nur.overlays.default ];
+          overlays = [
+            inputs.nur.overlays.default
+            (final: prev: {
+              inetutils =
+                if prev.stdenv.hostPlatform.isDarwin then
+                  prev.inetutils.overrideAttrs (old: {
+                    NIX_CFLAGS_COMPILE = (old.NIX_CFLAGS_COMPILE or [ ]) ++ [
+                      "-Wno-error=format-security"
+                    ];
+                  })
+                else
+                  prev.inetutils;
+            })
+          ];
         };
 
       mkPkgsOllama =
