@@ -97,6 +97,7 @@ in
         ferdium
         pkgs-unstable.discord
         teamspeak3
+        teamspeak6-client
         pkgs-unstable.teams-for-linux
         slack
 
