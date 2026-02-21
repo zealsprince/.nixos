@@ -1,5 +1,6 @@
 {
   pkgs,
+  pkgs-unstable,
   lib,
   inputs ? { },
   ...
@@ -53,7 +54,7 @@
       simple-scan
 
       # Security
-      opensnitch
+      pkgs-unstable.opensnitch
       mullvad-vpn
 
       # Recording

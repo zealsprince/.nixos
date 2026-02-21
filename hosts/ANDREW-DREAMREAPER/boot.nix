@@ -11,7 +11,7 @@
   # Keep this separate from generic configs so other hosts can avoid inheriting it.
 
   # Prefer latest kernel (matches prior configuration for this host).
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages;
 
   # UEFI
   boot.loader.efi.canTouchEfiVariables = true;
