@@ -25,7 +25,11 @@ in
 
   config = lib.mkIf plasmaEnabled {
     environment.systemPackages = with pkgs; [
+      # KDE/Plasma Addons
+      kdePackages.kdeplasma-addons
+
       # KDE/Plasma utilities
+      kdePackages.kcolorpicker
       kdePackages.yakuake
       kdePackages.kwalletmanager
       kdePackages.filelight
