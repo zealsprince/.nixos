@@ -68,6 +68,7 @@ in
         pkgs-unstable.zed-editor-fhs
         bruno
         vscode
+        firefox
         firefox-devedition
         ungoogled-chromium
         dbeaver-bin
