@@ -29,6 +29,7 @@
     ripgrep
     fd
     jq
+    atuin
     unzip
     zip
     tree
