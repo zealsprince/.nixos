@@ -60,6 +60,8 @@
     # Real dotfiles (Zsh/Vim/Tmux/scripts). Kept separate from Nix config.
     # Use the remote GitHub repo so it works on any machine and is pinned via flake.lock.
     dotfiles = {
+      # point URL at url = "path:/home/user/.dotfiles"; if you want to quickly test
+      # make sure to run `nix flake lock --update-input dotfiles` after any changes to update the lockfile with the new commit hash.
       url = "github:zealsprince/.dotfiles";
       flake = false;
     };
