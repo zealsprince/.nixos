@@ -64,9 +64,6 @@ in
     ../../modules/nixos/hardware/flexbar.nix
     ../../modules/nixos/hardware/openrgb.nix
 
-    # Base system packages for all hosts
-    ../../modules/nixos/packages/base.nix
-
     # Desktop package sets:
     # - `desktop.nix` is DE-agnostic GUI apps (safe for Hyprland, etc.)
     # - `desktop.plasma.nix` is Plasma/KDE-specific apps/utilities

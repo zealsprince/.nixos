@@ -8,22 +8,85 @@
 }:
 
 let
-  # We piggy-back on your existing "base HM profile" toggle so this module is a
-  # "thing on top" of the user-level base configuration, not the system config.
+  /*
+    Base system packages (terminal-friendly)
+
+    Intent:
+    - Keep this module safe for terminal-only or server-ish systems.
+    - Avoid GUI/desktop apps here (terminals, Steam, editors with GUI, etc.).
+    - Prefer keeping “workflow/UI” packages in a desktop-specific module.
+
+    Note:
+    - Host-specific tooling should live under `hosts/<host>/...` or a dedicated profile module.
+  */
   baseEnabled = config.my.home.base.enable or false;
 
+  # Safe fallbacks for channels that don't have the latest attributes yet.
+  nodejsPkg =
+    if pkgs ? nodejs_24 then
+      pkgs.nodejs_24
+    else if pkgs ? nodejs_22 then
+      pkgs.nodejs_22
+    else
+      pkgs.nodejs;
+
+  pythonPkg =
+    if pkgs ? python315 then
+      pkgs.python315
+    else if pkgs ? python314 then
+      pkgs.python314
+    else if pkgs ? python313 then
+      pkgs.python313
+    else
+      pkgs.python3;
+
   basePkgs = with pkgs; [
-    inputs.agenix.packages.${pkgs.system}.default
+    # Core tooling
+    git
+    gnupg
+    vim-full
+    wget
+    tmux
+    curl
+    ripgrep
+    fd
+    jq
+    atuin
+    unzip
+    zip
+    tree
+    file
+    rsync
+    openssh
+    bash
+    coreutils
+    gawk
+    gnused
+    ed
+    fzf
+    zoxide
+    age
+    zx
+    figlet
+    tiny
+    weechat
+    pkgs-unstable.fastfetch
+    inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
+    pkgs-unstable.yazi
     eza
     gh
+
+    # Nice to have
     pkgs-unstable.yt-dlp
-    awscli2
-    terraform
     radare2
 
+    # Cloud CLIs
+    awscli2
+    terraform
+
     # Languages that come with global packages
-    nodejs_24
-    python315
+    nodejsPkg
+    pythonPkg
     pipx
     deno
     rustup

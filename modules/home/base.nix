@@ -224,17 +224,15 @@ in
     # =========================================================================
     home.packages =
       cfg.packages
-      ++ (with pkgs; [
-        # Per-directory dev toolchain switching (direnv + Nix integration)
-        direnv
-        nix-direnv
 
-      ])
-      ++ (lib.optionals pkgs.stdenv.isLinux (with pkgs; [
-        # Audio CLI utilities (for discovering/setting mic monitor/sidetone)
-        alsa-utils # provides `amixer`
-        pulseaudio # provides `pactl` (works with PipeWire's PulseAudio compatibility too)
-      ]))
+      ++ (lib.optionals pkgs.stdenv.isLinux (
+        with pkgs;
+        [
+          # Audio CLI utilities (for discovering/setting mic monitor/sidetone)
+          alsa-utils # provides `amixer`
+          pulseaudio # provides `pactl` (works with PipeWire's PulseAudio compatibility too)
+        ]
+      ))
       ++ (lib.optionals (cfg.git.enable && cfg.git.installGpg && cfg.git.signingFormat == "openpgp") (
         with pkgs;
         [
