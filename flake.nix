@@ -125,6 +125,25 @@
                 else
                   prev.inetutils;
             })
+            (final: prev: {
+              python313Packages =
+                if prev ? python313Packages then
+                  prev.python313Packages.overrideScope (pyFinal: pyPrev: {
+                    jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
+                      doCheck = false;
+                      doInstallCheck = false;
+                      pythonImportsCheck = [ ];
+                    });
+                  })
+                else
+                  prev.python313Packages;
+              python3Packages = prev.python3Packages.overrideScope (pyFinal: pyPrev: {
+                jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
+                  doCheck = false;
+                  doInstallCheck = false;
+                });
+              });
+            })
           ];
         };
 
@@ -145,6 +164,25 @@
                   })
                 else
                   prev.inetutils;
+            })
+            (final: prev: {
+              python313Packages =
+                if prev ? python313Packages then
+                  prev.python313Packages.overrideScope (pyFinal: pyPrev: {
+                    jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
+                      doCheck = false;
+                      doInstallCheck = false;
+                      pythonImportsCheck = [ ];
+                    });
+                  })
+                else
+                  prev.python313Packages;
+              python3Packages = prev.python3Packages.overrideScope (pyFinal: pyPrev: {
+                jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
+                  doCheck = false;
+                  doInstallCheck = false;
+                });
+              });
             })
           ];
         };
