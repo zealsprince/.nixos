@@ -48,6 +48,7 @@ let
     wget
     tmux
     curl
+    dnsutils
     ripgrep
     fd
     jq
