@@ -97,6 +97,10 @@ let
     # Per-directory dev toolchain switching
     direnv
     nix-direnv
+
+    # AI Agents
+    claude-code
+    claude-monitor
   ];
 in
 {
