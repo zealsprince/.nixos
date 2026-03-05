@@ -29,6 +29,12 @@ in
   # containers typically can't reach the internet.
   boot.kernel.sysctl = {
     "net.ipv4.ip_forward" = 1;
+
+    # Ensure IPv6 is not disabled for interfaces. Required for Mullvad's
+    # userspace WireGuard (used when DAITA is enabled) to set IPv6 addresses
+    # on TUN devices.
+    "net.ipv6.conf.all.disable_ipv6" = 0;
+    "net.ipv6.conf.default.disable_ipv6" = 0;
   };
 
   # Disable hibernation (suspend-to-disk) since we use ephemeral encrypted swap.
@@ -118,7 +124,12 @@ in
     enable = true;
     monitorMethod = "ebpf";
   };
-  my.services.mullvad.enable = true;
+  my.services.mullvad = {
+    enable = true;
+    # Use the unstable package to get 2025.14 which contains fixes for the
+    # userspace WireGuard (DAITA) IPv6 address setup failure (os error 2).
+    package = pkgs-unstable.mullvad-vpn;
+  };
   services.ollama = {
     enable = true;
     package = pkgs-ollama.ollama-rocm;
