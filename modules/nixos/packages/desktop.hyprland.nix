@@ -33,7 +33,7 @@ in
       (with pkgs; [
         uwsm
         # --- File browser ---
-        nautilus
+        # nautilus
 
         # --- Status Bar ---
         waybar
