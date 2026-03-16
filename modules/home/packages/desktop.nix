@@ -67,7 +67,7 @@ in
         # Development tools
         pkgs-unstable.zed-editor-fhs
         bruno
-        vscode
+        pkgs-unstable.vscode
         firefox
         firefox-devedition
         ungoogled-chromium
@@ -95,11 +95,11 @@ in
 
         # Social & Work
         hexchat
-        ferdium
+        pkgs-unstable.ferdium
         pkgs-unstable.discord
         teamspeak3
         teamspeak6-client
-        pkgs-unstable.teams-for-linux
+        teams-for-linux
         slack
 
         # Streaming & Recording
