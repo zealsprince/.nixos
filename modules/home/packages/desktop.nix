@@ -56,6 +56,7 @@ in
 
         deluge
         tauon
+        syncplay
         pkgs-unstable.plezy
         opensnitch-ui
         syncthing
