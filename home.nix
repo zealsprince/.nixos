@@ -49,11 +49,6 @@ in
   # User-scoped fonts (Home Manager)
   my.home.fonts = {
     enable = true;
-    enableAllNerdFonts = false;
-    defaultSans = "Noto Sans";
-    defaultMonospace = "DejaVu Sans Mono";
-    # Keep the set small (DejaVu + a few nice defaults + emoji).
-    # Override here if you want to add/remove fonts later.
     packages = with pkgs; [
       noto-fonts
       dejavu_fonts
