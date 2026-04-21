@@ -8,10 +8,6 @@
     # Unstable for bleeding-edge packages (e.g. newer Ollama)
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
-    # Specific input for pinning Ollama (use a commit hash for 'url')
-    # FIXME: We're pegged at 0.14.3 because later versions currently break older models.
-    nixpkgs-ollama.url = "github:nixos/nixpkgs/a6eca83ac1d16ba3140eeebe3771cc6fa1619ac7"; # 0.14.3
-
     _1password-shell-plugins.url = "github:1Password/shell-plugins";
 
     # Home Manager, following the same release version
@@ -100,7 +96,6 @@
       self,
       nixpkgs,
       nixpkgs-unstable,
-      nixpkgs-ollama,
       lanzaboote,
       home-manager,
       ...
@@ -128,21 +123,25 @@
             (final: prev: {
               python313Packages =
                 if prev ? python313Packages then
-                  prev.python313Packages.overrideScope (pyFinal: pyPrev: {
-                    jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
-                      doCheck = false;
-                      doInstallCheck = false;
-                      pythonImportsCheck = [ ];
-                    });
-                  })
+                  prev.python313Packages.overrideScope (
+                    pyFinal: pyPrev: {
+                      jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
+                        doCheck = false;
+                        doInstallCheck = false;
+                        pythonImportsCheck = [ ];
+                      });
+                    }
+                  )
                 else
                   prev.python313Packages;
-              python3Packages = prev.python3Packages.overrideScope (pyFinal: pyPrev: {
-                jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
-                  doCheck = false;
-                  doInstallCheck = false;
-                });
-              });
+              python3Packages = prev.python3Packages.overrideScope (
+                pyFinal: pyPrev: {
+                  jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
+                    doCheck = false;
+                    doInstallCheck = false;
+                  });
+                }
+              );
             })
           ];
         };
@@ -168,30 +167,27 @@
             (final: prev: {
               python313Packages =
                 if prev ? python313Packages then
-                  prev.python313Packages.overrideScope (pyFinal: pyPrev: {
-                    jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
-                      doCheck = false;
-                      doInstallCheck = false;
-                      pythonImportsCheck = [ ];
-                    });
-                  })
+                  prev.python313Packages.overrideScope (
+                    pyFinal: pyPrev: {
+                      jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
+                        doCheck = false;
+                        doInstallCheck = false;
+                        pythonImportsCheck = [ ];
+                      });
+                    }
+                  )
                 else
                   prev.python313Packages;
-              python3Packages = prev.python3Packages.overrideScope (pyFinal: pyPrev: {
-                jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
-                  doCheck = false;
-                  doInstallCheck = false;
-                });
-              });
+              python3Packages = prev.python3Packages.overrideScope (
+                pyFinal: pyPrev: {
+                  jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
+                    doCheck = false;
+                    doInstallCheck = false;
+                  });
+                }
+              );
             })
           ];
-        };
-
-      mkPkgsOllama =
-        system:
-        import nixpkgs-ollama {
-          inherit system;
-          config.allowUnfree = true;
         };
 
       # Helper to create a standalone Home Manager configuration
@@ -207,7 +203,7 @@
           extraSpecialArgs = {
             inherit inputs;
             pkgs-unstable = mkPkgsUnstable system;
-            pkgs-ollama = mkPkgsOllama system;
+            pkgs-ollama = mkPkgsUnstable system;
           };
 
           modules = [
@@ -243,7 +239,7 @@
           specialArgs = {
             inherit inputs;
             pkgs-unstable = mkPkgsUnstable "x86_64-linux";
-            pkgs-ollama = mkPkgsOllama "x86_64-linux";
+            pkgs-ollama = mkPkgsUnstable "x86_64-linux";
           };
 
           modules = [
@@ -264,7 +260,7 @@
               home-manager.extraSpecialArgs = {
                 inherit inputs;
                 pkgs-unstable = mkPkgsUnstable "x86_64-linux";
-                pkgs-ollama = mkPkgsOllama "x86_64-linux";
+                pkgs-ollama = mkPkgsUnstable "x86_64-linux";
               };
 
               home-manager.backupFileExtension = "backup";
@@ -327,7 +323,7 @@
           extraSpecialArgs = {
             inherit inputs;
             pkgs-unstable = mkPkgsUnstable "x86_64-linux";
-            pkgs-ollama = mkPkgsOllama "x86_64-linux";
+            pkgs-ollama = mkPkgsUnstable "x86_64-linux";
           };
 
           modules = [
