@@ -100,7 +100,7 @@ in
         pkgs-unstable.discord
         teamspeak3
         teamspeak6-client
-        teams-for-linux
+        pkgs-unstable.teams-for-linux
         slack
 
         # Streaming & Recording

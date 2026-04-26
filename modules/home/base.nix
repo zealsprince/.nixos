@@ -255,19 +255,25 @@ in
     #
     # IMPORTANT: do NOT self-reference `config.home.sessionVariables` here.
     # That creates a recursive definition (sessionVariables depends on itself).
-    home.sessionVariables = lib.optionalAttrs cfg.zsh.enable {
-      # Dotfiles-consumed plugin entrypoints (portable hybrid approach).
-      # The dotfiles repo can source these if present; non-Nix systems can ignore them.
-      ZDOTFILES_ZSH_P10K_THEME = p10kTheme;
-      ZDOTFILES_ZSH_AUTOSUGGESTIONS = autosuggestionsPlugin;
-      ZDOTFILES_ZSH_SYNTAX_HIGHLIGHTING = syntaxHighlightingPlugin;
-      ZDOTFILES_ZSH_CODEX = codexPlugin;
-      ZSH_CODEX_PYTHON = "${codexPython}/bin/python3";
+    home.sessionVariables =
+      lib.optionalAttrs cfg.zsh.enable {
+        # Dotfiles-consumed plugin entrypoints (portable hybrid approach).
+        # The dotfiles repo can source these if present; non-Nix systems can ignore them.
+        ZDOTFILES_ZSH_P10K_THEME = p10kTheme;
+        ZDOTFILES_ZSH_AUTOSUGGESTIONS = autosuggestionsPlugin;
+        ZDOTFILES_ZSH_SYNTAX_HIGHLIGHTING = syntaxHighlightingPlugin;
+        ZDOTFILES_ZSH_CODEX = codexPlugin;
+        ZSH_CODEX_PYTHON = "${codexPython}/bin/python3";
 
-      # Make nix-direnv use the flake-based fast path by default when possible.
-      # (Safe even if you don't use it in a given directory.)
-      DIRENV_LOG_FORMAT = "";
-    };
+        # Make nix-direnv use the flake-based fast path by default when possible.
+        # (Safe even if you don't use it in a given directory.)
+        DIRENV_LOG_FORMAT = "";
+      }
+      // lib.optionalAttrs (cfg.git.enable && cfg.git.installGpg && cfg.git.signingFormat == "openpgp") {
+        # Expose the Nix store path to gpg-preset-passphrase so dotfiles can use it
+        # without hardcoding a non-NixOS path like /usr/lib/gnupg/gpg-preset-passphrase.
+        GPG_PRESET_PASSPHRASE = "${pkgs.gnupg}/libexec/gpg-preset-passphrase";
+      };
 
     # =========================================================================
     #  GPG / GPG-AGENT (for OpenPGP signing)
@@ -289,12 +295,16 @@ in
       enable = true;
 
       # Make sure the agent uses a functional pinentry implementation.
+      # Note: pinentry.package already writes `pinentry-program` to gpg-agent.conf,
+      # so do NOT repeat it in extraConfig — that causes duplicate entries.
       pinentry.package = pinentryPackage;
 
-      # Allow loopback for cases where gpg is invoked with --pinentry-mode loopback.
-      # This commonly helps with non-GUI/remote/TTY scenarios.
+      # allow-preset-passphrase: required for gpg-preset-passphrase to actually cache
+      #   the passphrase (e.g. fetched from 1Password). Without this, presets are
+      #   silently ignored and the agent falls back to pinentry every time.
+      # allow-loopback-pinentry: permits loopback mode for TTY/non-GUI scenarios.
       extraConfig = ''
-        pinentry-program ${pinentryProgram}
+        allow-preset-passphrase
         allow-loopback-pinentry
       '';
     };
