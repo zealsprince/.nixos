@@ -18,7 +18,69 @@ let
   # Ensure gpg-agent knows which pinentry to use.
   # Prefer a deterministic absolute store path (works in pure/pinned environments).
   pinentryPackage = if pkgs.stdenv.isDarwin then pkgs.pinentry_mac else pkgs.pinentry-qt;
-  pinentryProgram = lib.getExe pinentryPackage;
+
+  # ---------------------------------------------------------------------------
+  # gpg-preset-from-1password: a oneshot script run by a systemd user service
+  # at graphical-session startup. It sources credentials from ~/.zsh_op (never
+  # committed), polls until the 1Password desktop app is reachable, then calls
+  # gpg-preset-passphrase to cache the passphrase in gpg-agent.
+  #
+  # Required keys in ~/.zsh_op:
+  #   OP_ITEM=MyGPGItem
+  #   OP_GPG_KEYGRIP=<hex keygrip>
+  # Optional:
+  #   OP_FIELD=password        # defaults to "password"
+  #   OP_ACCOUNT=my.1password.com
+  #
+  # This runs in the graphical session (after graphical-session.target) where
+  # D-Bus and XDG_RUNTIME_DIR are properly set — the context where `op` can
+  # actually reach the 1Password desktop app without prompting.
+  # ---------------------------------------------------------------------------
+  gpgPresetScript = pkgs.writeShellScript "gpg-preset-from-1password" ''
+    set -euo pipefail
+
+    zsh_op="$HOME/.zsh_op"
+    if [[ ! -f "$zsh_op" ]]; then
+      echo "gpg-preset-from-1password: $zsh_op not found, skipping" >&2
+      exit 0
+    fi
+
+    # Load credentials (plain key=value pairs, no export required for bash source).
+    # shellcheck source=/dev/null
+    source "$zsh_op"
+
+    if [[ -z "''${OP_ITEM:-}" || -z "''${OP_GPG_KEYGRIP:-}" ]]; then
+      echo "gpg-preset-from-1password: OP_ITEM or OP_GPG_KEYGRIP not set in $zsh_op, skipping" >&2
+      exit 0
+    fi
+
+    # Poll until the 1Password desktop app is reachable (max 60 seconds).
+    max_wait=60
+    elapsed=0
+    while ! op account get &>/dev/null; do
+      if [[ $elapsed -ge $max_wait ]]; then
+        echo "gpg-preset-from-1password: 1Password not available after $max_wait seconds, skipping" >&2
+        exit 0
+      fi
+      sleep 2
+      elapsed=$((elapsed + 2))
+    done
+
+    # Skip if the passphrase is already cached for this keygrip.
+    if ${pkgs.gnupg}/bin/gpg-connect-agent "KEYINFO ''${OP_GPG_KEYGRIP}" /bye 2>/dev/null | grep -q " P "; then
+      echo "gpg-preset-from-1password: passphrase already cached for ''${OP_GPG_KEYGRIP}" >&2
+      exit 0
+    fi
+
+    # Fetch passphrase from 1Password and preset into gpg-agent.
+    op_args=(item get "''${OP_ITEM}" --fields "''${OP_FIELD:-password}" --reveal)
+    [[ -n "''${OP_ACCOUNT:-}" ]] && op_args+=(--account "''${OP_ACCOUNT}")
+
+    op "''${op_args[@]}" | \
+      ${pkgs.gnupg}/libexec/gpg-preset-passphrase --preset "''${OP_GPG_KEYGRIP}"
+
+    echo "gpg-preset-from-1password: passphrase preset successfully for ''${OP_GPG_KEYGRIP}" >&2
+  '';
 
   # Used by SSH matchBlocks below; keep it overridable and cross-platform.
   onePasswordAgentSockDefault = "~/.1password/agent.sock";
@@ -176,6 +238,17 @@ in
         default = true;
         description = "Install GnuPG tooling in the user profile to support OpenPGP git signing.";
       };
+
+      # When enabled, installs a systemd user service that presets the GPG key
+      # passphrase into gpg-agent at graphical-session startup via 1Password.
+      # Requires ~/.zsh_op to be present with OP_ITEM and OP_GPG_KEYGRIP set.
+      # Only meaningful on systems with a graphical session (Wayland/X11).
+      presetGpgAtLogin = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enable systemd user service to preset GPG passphrase from 1Password at login.";
+      };
+
     };
 
     # ---- SSH ----
@@ -294,20 +367,56 @@ in
     services.gpg-agent = lib.mkIf (cfg.git.enable && cfg.git.signingFormat == "openpgp") {
       enable = true;
 
-      # Make sure the agent uses a functional pinentry implementation.
-      # Note: pinentry.package already writes `pinentry-program` to gpg-agent.conf,
+      # Use the real pinentry for fallback prompts. The gpgPresetScript service
+      # caches the passphrase at login so pinentry is rarely invoked.
+      # Note: pinentry.package writes `pinentry-program` to gpg-agent.conf,
       # so do NOT repeat it in extraConfig — that causes duplicate entries.
       pinentry.package = pinentryPackage;
 
-      # allow-preset-passphrase: required for gpg-preset-passphrase to actually cache
-      #   the passphrase (e.g. fetched from 1Password). Without this, presets are
-      #   silently ignored and the agent falls back to pinentry every time.
+      # allow-preset-passphrase: required for gpg-preset-passphrase to work.
       # allow-loopback-pinentry: permits loopback mode for TTY/non-GUI scenarios.
+      # Cache TTLs: keep the preset alive for a full day / week so the service
+      # only needs to run once per session (not per reboot of the agent).
       extraConfig = ''
         allow-preset-passphrase
         allow-loopback-pinentry
+        default-cache-ttl 86400
+        max-cache-ttl 604800
       '';
     };
+
+    # =========================================================================
+    #  GPG PRESET AT LOGIN (systemd user service)
+    #
+    # Runs after graphical-session.target where D-Bus and XDG_RUNTIME_DIR are
+    # properly initialised — the only context where `op` can reliably reach the
+    # 1Password desktop app. Polls up to 60 s for the app to unlock, then calls
+    # gpg-preset-passphrase to cache the passphrase in gpg-agent so that
+    # editor-initiated git signing never triggers a pinentry prompt.
+    # =========================================================================
+    systemd.user.services.gpg-preset-from-1password =
+      lib.mkIf (cfg.git.enable && cfg.git.signingFormat == "openpgp" && cfg.git.presetGpgAtLogin)
+        {
+          Unit = {
+            Description = "Preset GPG passphrase from 1Password at graphical login";
+            After = [ "graphical-session.target" ];
+            Wants = [ "graphical-session.target" ];
+            StartLimitBurst = 3;
+            StartLimitIntervalSec = "30s";
+          };
+          Service = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${gpgPresetScript}";
+            # Restart on failure up to a point — handles races where 1Password
+            # starts slightly after graphical-session.target is reached.
+            Restart = "on-failure";
+            RestartSec = "5s";
+          };
+          Install = {
+            WantedBy = [ "graphical-session.target" ];
+          };
+        };
 
     # =========================================================================
     #  DIRENV (per-directory environments) + NIX-DIRENV (fast Nix shells)

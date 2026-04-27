@@ -261,6 +261,10 @@ in
 
       # Prefer OpenPGP signing (gpg) over 1Password SSH signing.
       use1PasswordSshSigning = false;
+
+      # Preset the GPG passphrase from 1Password at graphical login via a
+      # systemd user service. Requires ~/.zsh_op with OP_ITEM and OP_GPG_KEYGRIP.
+      presetGpgAtLogin = true;
     };
 
     ssh = {
