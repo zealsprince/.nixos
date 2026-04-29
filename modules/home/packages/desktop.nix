@@ -98,6 +98,7 @@ in
         hexchat
         pkgs-unstable.ferdium
         pkgs-unstable.discord
+        pkgs-unstable.signal-desktop
         pkgs-unstable.element-desktop
         teamspeak3
         teamspeak6-client
