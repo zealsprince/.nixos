@@ -111,6 +111,7 @@ in
         gopro-tool
 
         # Gaming & Wine
+        pkgs-unstable.wine-staging
         heroic
         lutris
         prismlauncher
