@@ -55,7 +55,7 @@
 
       # Security
       pkgs-unstable.opensnitch
-      mullvad-vpn
+      pkgs-unstable.mullvad-vpn
 
       # Recording
       gpu-screen-recorder
