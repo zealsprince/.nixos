@@ -166,11 +166,11 @@
     "dotfiles": {
       "flake": false,
       "locked": {
-        "lastModified": 1777318197,
-        "narHash": "sha256-PltXDxsFKjAIImDfwbOl0BWIXivSMd7EEXb4Nmp3WL0=",
+        "lastModified": 1777920781,
+        "narHash": "sha256-2OaliF/kLIRtf8iHA9HJ54zh6BRygJGv3oLVMVML4C4=",
         "owner": "zealsprince",
         "repo": ".dotfiles",
-        "rev": "2b998677d6a19aaf4aa3ca5933828af8ff3d2398",
+        "rev": "e6fffefda8e9ea2dda3cf561afbab6b076ceadd1",
         "type": "github"
       },
       "original": {
