@@ -104,6 +104,10 @@ in
 
     services.desktopManager.plasma6.enable = true;
 
+    # Unlock KWallet automatically on SDDM login so apps (e.g. VSCode) can
+    # access the OS keyring without prompting or failing silently.
+    security.pam.services.sddm.enableKwallet = true;
+
     services.xserver.xkb = {
       layout = cfg.xkb.layout;
       variant = cfg.xkb.variant;
