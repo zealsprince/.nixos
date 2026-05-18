@@ -579,7 +579,7 @@ in
             if ${lib.boolToString cfg.ssh.use1PasswordAgent}; then
               cat > "$xdg_config" <<'EOF'
       Host *
-        IdentityAgent ${cfg.ssh.onePasswordAgentSock}
+        IdentityAgent "${cfg.ssh.onePasswordAgentSock}"
       EOF
             else
               : > "$xdg_config"
