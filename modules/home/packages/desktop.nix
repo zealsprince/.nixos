@@ -83,13 +83,14 @@ in
         ghidra
 
         # Creative tools
-        inputs.affinity-nix.packages.${pkgs.stdenv.hostPlatform.system}.v3
+        inputs.affinity-nix.packages.${pkgs.stdenv.hostPlatform.system}.affinity-v3
         pureref
         darktable
         blender-hip
         krita
         handbrake
         davinci-resolve
+
         audacity
         vcv-rack
         renoise
@@ -121,5 +122,17 @@ in
         osu-lazer-bin
       ])
       ++ cfg.packages;
+
+    # VSCode: manage extensions via Home Manager.
+    # The editor itself is installed as a package above (pkgs-unstable.vscode).
+    programs.vscode = {
+      enable = true;
+      package = pkgs-unstable.vscode;
+
+      profiles.default.extensions = with pkgs.vscode-extensions; [
+        # .NET / C# development
+        ms-dotnettools.csharp
+      ];
+    };
   };
 }

@@ -109,6 +109,7 @@
           config.allowUnfree = true;
           overlays = [
             inputs.nur.overlays.default
+            inputs.affinity-nix.overlays.default
             (final: prev: {
               inetutils =
                 if prev.stdenv.hostPlatform.isDarwin then
@@ -233,7 +234,6 @@
       # -----------------------------------------------------------------------
       nixosConfigurations = {
         ANDREW-DREAMREAPER = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
 
           # Pass inputs to modules so modules can reference flake inputs when needed
           specialArgs = {
@@ -243,6 +243,7 @@
           };
 
           modules = [
+            { nixpkgs.hostPlatform = "x86_64-linux"; }
             inputs.nur.modules.nixos.default
             inputs.nur.legacyPackages.x86_64-linux.repos.charmbracelet.modules.nixos.crush
             inputs.agenix.nixosModules.default

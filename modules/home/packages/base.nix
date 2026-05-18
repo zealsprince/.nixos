@@ -88,6 +88,7 @@ let
     # Languages that come with global packages
     nodejsPkg
     pythonPkg
+    dotnetCorePackages.sdk_9_0
     pipx
     deno
     rustup

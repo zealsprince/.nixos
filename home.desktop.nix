@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
   gsrNotify = pkgs.writeShellScript "gsr-notify" ''
@@ -32,6 +37,25 @@ in
     # WM-specific config (Hyprland)
     ./modules/home/wm/hyprland.nix
   ];
+
+  # ---------------------------------------------------------------------------
+  # Zen Browser
+  # ---------------------------------------------------------------------------
+  # Inject the portal file-picker pref into all Zen profiles so the KDE native
+  # file dialog is used instead of the GTK one.
+  home.activation.zenPortalFilePicker = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [ -d "$HOME/.zen" ]; then
+      for profile in "$HOME/.zen"/*/; do
+        # Skip non-profile dirs (e.g. Profile Groups)
+        [ -f "$profile/prefs.js" ] || continue
+        userjs="$profile/user.js"
+        pref='user_pref("widget.use-xdg-desktop-portal.file-picker", 1);'
+        if ! grep -qF 'widget.use-xdg-desktop-portal.file-picker' "$userjs" 2>/dev/null; then
+          echo "$pref" >> "$userjs"
+        fi
+      done
+    fi
+  '';
 
   # Zed Editor Theme
   home.file.".config/zed/themes/neko-dark.json".source =

@@ -83,7 +83,12 @@ let
   '';
 
   # Used by SSH matchBlocks below; keep it overridable and cross-platform.
-  onePasswordAgentSockDefault = "~/.1password/agent.sock";
+  # macOS uses a Group Containers socket; Linux uses ~/.1password/agent.sock.
+  onePasswordAgentSockDefault =
+    if pkgs.stdenv.isDarwin then
+      "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+    else
+      "~/.1password/agent.sock";
 
   # Home Manager is deprecating relative `programs.zsh.dotDir` paths.
   # Use an XDG-aware absolute path to keep ~/.zshrc free for dotfiles symlink.
@@ -341,11 +346,25 @@ in
         # Make nix-direnv use the flake-based fast path by default when possible.
         # (Safe even if you don't use it in a given directory.)
         DIRENV_LOG_FORMAT = "";
+
+        # Required for .NET tooling to locate the runtime and SDK on NixOS.
+        # See: https://wiki.nixos.org/wiki/DotNET#Troubleshooting
+        DOTNET_ROOT = "${pkgs.dotnetCorePackages.sdk_9_0}/share/dotnet";
       }
       // lib.optionalAttrs (cfg.git.enable && cfg.git.installGpg && cfg.git.signingFormat == "openpgp") {
         # Expose the Nix store path to gpg-preset-passphrase so dotfiles can use it
         # without hardcoding a non-NixOS path like /usr/lib/gnupg/gpg-preset-passphrase.
         GPG_PRESET_PASSPHRASE = "${pkgs.gnupg}/libexec/gpg-preset-passphrase";
+      }
+      // lib.optionalAttrs cfg.ssh.use1PasswordAgent {
+        # Point SSH_AUTH_SOCK at 1Password's agent socket so all tools
+        # (git, editors, scripts) find it — not just ssh(1) via IdentityAgent.
+        SSH_AUTH_SOCK = cfg.ssh.onePasswordAgentSock;
+      }
+      // {
+        # Force GTK apps (e.g. Zed) to use the xdg-desktop-portal file picker
+        # instead of their own GTK dialog, so KDE's native dialog is used.
+        GTK_USE_PORTAL = "1";
       };
 
     # =========================================================================

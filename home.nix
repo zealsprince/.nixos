@@ -271,7 +271,6 @@ in
       enable = true;
       enableDefaultConfig = false;
       use1PasswordAgent = true;
-      onePasswordAgentSock = "~/.1password/agent.sock";
     };
   };
 
