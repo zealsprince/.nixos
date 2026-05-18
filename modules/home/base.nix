@@ -610,9 +610,14 @@ in
           fi
           chmod 600 "$ssh_config"
 
-          # Ensure it includes the XDG-managed config.
+          # Ensure it includes the XDG-managed config at the TOP of the file.
+          # Include must come before any Host blocks to apply globally (e.g. IdentityAgent).
           if ! grep -qE '^[[:space:]]*Include[[:space:]]+${config.xdg.configHome}/ssh/config[[:space:]]*$' "$ssh_config"; then
-            printf '%s\n' "Include ${config.xdg.configHome}/ssh/config" >> "$ssh_config"
+            tmp=$(mktemp)
+            printf '%s\n' "Include ${config.xdg.configHome}/ssh/config" > "$tmp"
+            cat "$ssh_config" >> "$tmp"
+            chmod 600 "$tmp"
+            mv "$tmp" "$ssh_config"
           fi
         '';
   };
