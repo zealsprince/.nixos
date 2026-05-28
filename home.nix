@@ -202,33 +202,34 @@ in
   # ---------------------------------------------------------------------------
   # Zed
   # ---------------------------------------------------------------------------
-  # Mutable config: copy files and backup if changed.
+  # Seed-only config: copy upstream once, then leave user edits alone.
+  # An `.upstream` sidecar is refreshed every activation so the latest
+  # dotfiles version can be diffed against the live file when pulling in
+  # new defaults manually:
+  #   diff ~/.config/zed/settings.json ~/.config/zed/settings.json.upstream
   home.activation.installZedConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     mkdir -p $HOME/.config/zed
 
-    install_mutable() {
+    seed_mutable() {
       local src=$1
       local dst=$2
 
-      # Remove symlinks if they exist (cleanup from old config)
+      # Cleanup: remove symlinks from previous (immutable) config style
       if [ -L "$dst" ]; then rm "$dst"; fi
 
-      if [ -e "$dst" ]; then
-        if ! cmp -s "$src" "$dst"; then
-          # File exists and content differs: backup and overwrite
-          cp "$dst" "$dst.backup"
-          cp -f "$src" "$dst"
-          chmod u+w "$dst"
-        fi
-      else
-        # File does not exist: copy and make writable
+      # Always refresh upstream reference for manual diffing
+      cp -f "$src" "$dst.upstream"
+      chmod u+w "$dst.upstream"
+
+      # Seed once: only write if user has no file yet
+      if [ ! -e "$dst" ]; then
         cp "$src" "$dst"
         chmod u+w "$dst"
       fi
     }
 
-    install_mutable "${inputs.dotfiles}/zed/settings.json" "$HOME/.config/zed/settings.json"
-    install_mutable "${inputs.dotfiles}/zed/keymap.json" "$HOME/.config/zed/keymap.json"
+    seed_mutable "${inputs.dotfiles}/zed/settings.json" "$HOME/.config/zed/settings.json"
+    seed_mutable "${inputs.dotfiles}/zed/keymap.json" "$HOME/.config/zed/keymap.json"
   '';
 
   home.file.".config/zed/themes/neko-dark.json".source =
