@@ -67,7 +67,14 @@ let
     done
 
     # Skip if the passphrase is already cached for this keygrip.
-    if ${pkgs.gnupg}/bin/gpg-connect-agent "KEYINFO ''${OP_GPG_KEYGRIP}" /bye 2>/dev/null | grep -q " P "; then
+    # KEYINFO output: S KEYINFO <grip> <type> <serialno> <idstr> <cached> <protection> ...
+    # The 5th field after the grip is the cache flag (1 = cached, - = not).
+    # The 6th field is protection (P = passphrase-protected) and is ALWAYS
+    # present for a protected key — so we must match the cache flag, not P.
+    keyinfo=$(${pkgs.gnupg}/bin/gpg-connect-agent "KEYINFO ''${OP_GPG_KEYGRIP}" /bye 2>/dev/null | head -n1)
+    # Fields: S KEYINFO <grip> <type> <serial> <idstr> <cached> <prot> ...
+    cached_flag=$(echo "$keyinfo" | awk '{print $7}')
+    if [[ "$cached_flag" == "1" ]]; then
       echo "gpg-preset-from-1password: passphrase already cached for ''${OP_GPG_KEYGRIP}" >&2
       exit 0
     fi
