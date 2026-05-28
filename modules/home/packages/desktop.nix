@@ -132,7 +132,19 @@ in
       profiles.default.extensions = with pkgs.vscode-extensions; [
         # .NET / C# development
         ms-dotnettools.csharp
+
+        # PowerShell (pwsh installed via modules/home/powershell.nix)
+        ms-vscode.powershell
       ];
+
+      # The PowerShell extension only probes a hard-coded list of distro
+      # paths and doesn't search $PATH, so point it at the Nix-provided pwsh.
+      profiles.default.userSettings = {
+        "powershell.powerShellAdditionalExePaths" = {
+          "PowerShell (Nix)" = "${pkgs.powershell}/bin/pwsh";
+        };
+        "powershell.powerShellDefaultVersion" = "PowerShell (Nix)";
+      };
     };
   };
 }

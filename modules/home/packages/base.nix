@@ -40,69 +40,74 @@ let
     else
       pkgs.python3;
 
-  basePkgs = with pkgs; [
-    # Core tooling
-    git
-    gnupg
-    vim-full
-    wget
-    tmux
-    curl
-    dnsutils
-    ripgrep
-    fd
-    jq
-    atuin
-    unzip
-    zip
-    tree
-    file
-    rsync
-    openssh
-    bash
-    coreutils
-    gawk
-    gnused
-    ed
-    fzf
-    zoxide
-    age
-    zx
-    figlet
-    tiny
-    weechat
-    pkgs-unstable.fastfetch
-    inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
-    pkgs-unstable.yazi
-    eza
-    gh
+  basePkgs =
+    with pkgs;
+    [
+      # Core tooling
+      git
+      gnupg
+      vim-full
+      wget
+      tmux
+      curl
+      dnsutils
+      ripgrep
+      fd
+      jq
+      atuin
+      unzip
+      zip
+      tree
+      file
+      rsync
+      openssh
+      bash
+      coreutils
+      gawk
+      gnused
+      ed
+      fzf
+      zoxide
+      age
+      zx
+      figlet
+      tiny
+      weechat
+      pkgs-unstable.fastfetch
+      inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
+      pkgs-unstable.yazi
+      eza
+      gh
 
-    # Nice to have
-    pkgs-unstable.yt-dlp
-    radare2
+      # Nice to have
+      pkgs-unstable.yt-dlp
+      radare2
 
-    # Cloud CLIs
-    awscli2
-    terraform
+      # Cloud CLIs
+      awscli2
+      terraform
 
-    # Languages that come with global packages
-    nodejsPkg
-    pythonPkg
-    dotnetCorePackages.sdk_9_0
-    pipx
-    deno
-    rustup
-    nixd
-    nil
+      # Languages that come with global packages
+      nodejsPkg
+      pythonPkg
+      dotnetCorePackages.sdk_9_0
+      pipx
+      deno
+      rustup
+      nixd
+      nil
 
-    # Per-directory dev toolchain switching
-    direnv
-    nix-direnv
+      # Per-directory dev toolchain switching
+      direnv
+      nix-direnv
 
-    # AI Agents
-    claude-code
-    claude-monitor
-  ];
+      # AI Agents
+      claude-code
+      claude-monitor
+    ]
+    ++ lib.optional (
+      inputs.upf.packages ? ${pkgs.stdenv.hostPlatform.system}
+    ) inputs.upf.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
   /*

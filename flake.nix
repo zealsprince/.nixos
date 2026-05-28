@@ -89,6 +89,11 @@
       url = "git+https://codeberg.org/LGFae/awww";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    upf = {
+      url = "github:Jokler/upf";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

@@ -365,6 +365,11 @@ in
         # Force GTK apps (e.g. Zed) to use the xdg-desktop-portal file picker
         # instead of their own GTK dialog, so KDE's native dialog is used.
         GTK_USE_PORTAL = "1";
+
+        # Command-line editor. Zed is the GUI editor of choice, but for
+        # terminal contexts (git commit, crontab, sudoedit, etc.) use vim.
+        EDITOR = "vim";
+        VISUAL = "vim";
       };
 
     # =========================================================================
