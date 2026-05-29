@@ -137,14 +137,37 @@ in
         ms-vscode.powershell
       ];
 
-      # The PowerShell extension only probes a hard-coded list of distro
-      # paths and doesn't search $PATH, so point it at the Nix-provided pwsh.
-      profiles.default.userSettings = {
-        "powershell.powerShellAdditionalExePaths" = {
-          "PowerShell (Nix)" = "${pkgs.powershell}/bin/pwsh";
-        };
-        "powershell.powerShellDefaultVersion" = "PowerShell (Nix)";
-      };
+      # NOTE: deliberately no `userSettings` here. Setting it makes Home
+      # Manager write settings.json as a read-only nix-store symlink, which
+      # VSCode surfaces as a locked/"managed" config. We keep settings.json a
+      # mutable, user-owned file and only patch the dynamic pwsh path below.
     };
+
+    # The PowerShell extension only probes a hard-coded list of distro paths
+    # and doesn't search $PATH, so point it at the Nix-provided pwsh. Rather
+    # than letting HM manage (lock) settings.json, patch just this key into
+    # the user's mutable settings.json on each rebuild.
+    home.activation.patchVSCodePwshPath = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      settings="$HOME/.config/Code/User/settings.json"
+      mkdir -p "$(dirname "$settings")"
+
+      # Drop any prior managed symlink so the file becomes user-owned again.
+      if [ -L "$settings" ]; then rm "$settings"; fi
+      if [ ! -e "$settings" ]; then echo '{}' > "$settings"; chmod u+w "$settings"; fi
+
+      # Skip silently if the file isn't plain JSON (e.g. user added JSONC
+      # comments); never clobber a settings file we can't safely parse.
+      if ${pkgs.jq}/bin/jq -e . "$settings" >/dev/null 2>&1; then
+        tmp="$(mktemp)"
+        ${pkgs.jq}/bin/jq \
+          --arg pwsh "${pkgs.powershell}/bin/pwsh" \
+          '.["powershell.powerShellAdditionalExePaths"]["PowerShell (Nix)"] = $pwsh
+           | .["powershell.powerShellDefaultVersion"] = "PowerShell (Nix)"' \
+          "$settings" > "$tmp" && mv "$tmp" "$settings"
+        chmod u+w "$settings"
+      else
+        echo "patchVSCodePwshPath: $settings is not plain JSON, skipping pwsh patch" >&2
+      fi
+    '';
   };
 }

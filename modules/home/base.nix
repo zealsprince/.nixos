@@ -369,6 +369,13 @@ in
         SSH_AUTH_SOCK = cfg.ssh.onePasswordAgentSock;
       }
       // {
+        # Suppress zoxide's doctor warning globally. The interactive ~/.zshrc
+        # exports this too, but editor agents (Claude Code, etc.) replay a shell
+        # snapshot that omits the export, so the warning fires once per session.
+        # Setting it as a session var means every process inherits it from the
+        # start, independent of interactive zsh init.
+        _ZO_DOCTOR = "0";
+
         # Force GTK apps (e.g. Zed) to use the xdg-desktop-portal file picker
         # instead of their own GTK dialog, so KDE's native dialog is used.
         GTK_USE_PORTAL = "1";
