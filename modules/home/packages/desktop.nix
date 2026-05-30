@@ -116,7 +116,7 @@ in
         heroic
         lutris
         prismlauncher
-        r2modman
+        pkgs-unstable.r2modman
         gamescope
         mangohud
         osu-lazer-bin
