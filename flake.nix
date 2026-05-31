@@ -2,17 +2,22 @@
   description = "zealsprince's NixOS + Home Manager flake";
 
   inputs = {
-    # NixOS official package source, using the 25.11 branch
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    # NixOS official package source, using the 26.05 branch
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
 
     # Unstable for bleeding-edge packages (e.g. newer Ollama)
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+
+    # Pinned 25.11 source, used only to retain the legacy TeamSpeak 3 client,
+    # which was removed from nixpkgs 26.05 (EOL qt5 webengine). See the overlay
+    # in hosts/ANDREW-DREAMREAPER/default.nix.
+    nixpkgs-ts3.url = "github:nixos/nixpkgs/nixos-25.11";
 
     _1password-shell-plugins.url = "github:1Password/shell-plugins";
 
     # Home Manager, following the same release version
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -20,15 +25,13 @@
       url = "github:nix-community/lanzaboote";
     };
 
-    nixpkgs-howdy.url = "github:fufexan/nixpkgs/howdy";
-
     zen-browser = {
       url = "github:youwen5/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    kwin-effects-forceblur = {
-      url = "github:taj-ny/kwin-effects-forceblur";
+    kwin-effects-better-blur-dx = {
+      url = "github:xarblu/kwin-effects-better-blur-dx";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -292,9 +295,6 @@
 
             # Shell plugins module (used by system config)
             inputs._1password-shell-plugins.nixosModules.default
-
-            # Howdy module definition (service module comes from the input)
-            "${inputs.nixpkgs-howdy}/nixos/modules/services/security/howdy"
           ];
         };
       };

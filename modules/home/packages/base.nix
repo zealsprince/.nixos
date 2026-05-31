@@ -91,7 +91,13 @@ let
       nodejsPkg
       pythonPkg
       dotnetCorePackages.sdk_9_0
-      pipx
+      # pipx 1.8.0 in 26.05 fails its own test_package_specifier suite (upstream
+      # `packaging` normalization changed `name @ url` spacing; tests not updated).
+      # Skip the package's checks until nixpkgs catches up.
+      (pipx.overridePythonAttrs (_: {
+        doCheck = false;
+        doInstallCheck = false;
+      }))
       deno
       rustup
       nixd

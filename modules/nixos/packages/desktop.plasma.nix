@@ -48,9 +48,8 @@ in
       # Pinentry UI that fits KDE/Qt environments
       pinentry-qt
 
-      # KWin Force Blur
-      inputs.kwin-effects-forceblur.packages.${pkgs.stdenv.hostPlatform.system}.default # Wayland
-      inputs.kwin-effects-forceblur.packages.${pkgs.stdenv.hostPlatform.system}.x11 # X11
+      # KWin Better Blur DX (continuation of the archived kwin-effects-forceblur)
+      inputs.kwin-effects-better-blur-dx.packages.${pkgs.stdenv.hostPlatform.system}.default # Wayland
     ];
   };
 }

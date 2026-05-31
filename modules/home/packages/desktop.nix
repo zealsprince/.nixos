@@ -86,7 +86,7 @@ in
         inputs.affinity-nix.packages.${pkgs.stdenv.hostPlatform.system}.affinity-v3
         pureref
         darktable
-        blender-hip
+        (blender.override { rocmSupport = true; })
         krita
         handbrake
         davinci-resolve

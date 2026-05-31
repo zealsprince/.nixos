@@ -4,6 +4,7 @@
   pkgs,
   pkgs-unstable,
   pkgs-ollama,
+  inputs,
   ...
 }:
 
@@ -108,14 +109,25 @@ in
 
   # Workaround: TeamSpeak 3 blocks logout/shutdown via session manager.
   # We unset SESSION_MANAGER so it doesn't register itself.
+  #
+  # NOTE: The legacy TeamSpeak 3 client was removed from nixpkgs in 26.05
+  # (depended on the EOL qt5 webengine). We pin it from the 25.11 nixpkgs
+  # input (`nixpkgs-ts3`) so we can keep using it. This knowingly pulls in
+  # the insecure qtwebengine-5.15.19 (allowed in modules/nixos/common.nix).
   nixpkgs.overlays = [
     (final: prev: {
-      teamspeak3 = prev.teamspeak3.overrideAttrs (old: {
-        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.makeWrapper ];
-        postInstall = (old.postInstall or "") + ''
-          wrapProgram $out/bin/ts3client --unset SESSION_MANAGER
-        '';
-      });
+      teamspeak3 =
+        (import inputs.nixpkgs-ts3 {
+          inherit (prev.stdenv.hostPlatform) system;
+          config.allowUnfree = true;
+          config.permittedInsecurePackages = [ "qtwebengine-5.15.19" ];
+        }).teamspeak3.overrideAttrs
+          (old: {
+            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.makeWrapper ];
+            postInstall = (old.postInstall or "") + ''
+              wrapProgram $out/bin/ts3client --unset SESSION_MANAGER
+            '';
+          });
     })
   ];
 
@@ -133,7 +145,6 @@ in
   services.ollama = {
     enable = true;
     package = pkgs-ollama.ollama-rocm;
-    acceleration = "rocm";
     rocmOverrideGfx = "10.3.0";
   };
 
