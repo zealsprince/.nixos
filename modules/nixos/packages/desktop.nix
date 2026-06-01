@@ -36,8 +36,9 @@
   #   headsetcontrol
   # ];
 
-  environment.systemPackages =
-    (with pkgs; [
+  environment.systemPackages = (
+    with pkgs;
+    [
       # Control Corsair Devices
       (ckb-next.overrideAttrs (old: {
         cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DUSE_DBUS_MENU=0" ];
@@ -75,8 +76,9 @@
       # Bluetooth tooling (CLI utilities)
       bluez
       bluez-tools
-    ])
+    ]
     ++ (lib.optionals (inputs ? zen-browser) [
-      inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
-    ]);
+      inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.zen-browser
+    ])
+  );
 }

@@ -54,6 +54,18 @@ in
         description = "Inject Howdy into KDE lock screen PAM stack (face -> password fallback).";
       };
 
+      enableHyprlock = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Inject Howdy into the hyprlock PAM stack (face -> password fallback).";
+      };
+
+      enableSwaylock = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Inject Howdy into the swaylock PAM stack (face -> password fallback).";
+      };
+
       force = lib.mkOption {
         type = lib.types.bool;
         default = true;
@@ -63,6 +75,18 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # As of 26.05 the upstream `services.howdy` module auto-injects pam_howdy
+    # into EVERY PAM stack (polkit-1, sddm, login, hyprlock, ...) via
+    # `security.pam.howdy.enable` (which defaults to `services.howdy.enable`).
+    # We do NOT want that: the KDE polkit agent speaks a strict line protocol
+    # to polkit-agent-helper-1 and cannot parse pam_howdy's info messages
+    # ("Howdy could not find a camera device..."), nor can pam_howdy reach the
+    # camera inside polkit's sandboxed helper. The result is an instant
+    # "Authentication failure" with no password fallback. We only want Howdy in
+    # the sudo/kde stacks we define explicitly below, so disable the global
+    # auto-injection and keep the hand-rolled stacks as the single source.
+    security.pam.howdy.enable = false;
+
     services.howdy = {
       enable = true;
       package = howdyPkg;
@@ -151,5 +175,23 @@ in
         session  optional       ${pkgs.kdePackages.kwallet-pam}/lib/security/pam_kwallet5.so
       ''
     );
+
+    # -------------------------------------------------------------------------
+    # Wayland lock screens (hyprlock / swaylock)
+    # -------------------------------------------------------------------------
+    # These default stacks are plain pam_unix, so instead of hand-rolling raw
+    # `.text` (which risks dropping the correctly-pathed pam_unix/pam_limits
+    # lines) we re-enable the upstream per-service Howdy injection just for
+    # these services. The rules engine inserts pam_howdy at the right order and
+    # keeps everything else intact. `sufficient` => face -> password fallback.
+    security.pam.services.hyprlock.howdy = lib.mkIf cfg.pam.enableHyprlock {
+      enable = true;
+      control = "sufficient";
+    };
+
+    security.pam.services.swaylock.howdy = lib.mkIf cfg.pam.enableSwaylock {
+      enable = true;
+      control = "sufficient";
+    };
   };
 }

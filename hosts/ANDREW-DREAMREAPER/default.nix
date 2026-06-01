@@ -128,6 +128,7 @@ in
               wrapProgram $out/bin/ts3client --unset SESSION_MANAGER
             '';
           });
+      zen-browser = inputs.zen-browser.packages.${prev.stdenv.hostPlatform.system}.zen-browser;
     })
   ];
 
