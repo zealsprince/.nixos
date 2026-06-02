@@ -99,6 +99,8 @@ let
         doInstallCheck = false;
       }))
       deno
+      go
+      gcc
       rustup
       nixd
       nil
