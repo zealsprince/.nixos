@@ -143,16 +143,45 @@ in
       # mutable, user-owned file and only patch the dynamic pwsh path below.
     };
 
+    # Seed-only config: copy upstream once, then leave user edits alone.
+    # An `.upstream` sidecar is refreshed every activation for manual diffing:
+    #   diff ~/.config/Code/User/settings.json ~/.config/Code/User/settings.json.upstream
+    home.activation.seedVSCodeConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      settings="$HOME/.config/Code/User/settings.json"
+      mkdir -p "$(dirname "$settings")"
+
+      seed_mutable() {
+        local src=$1
+        local dst=$2
+
+        # Cleanup: remove symlinks from previous (immutable) config style
+        if [ -L "$dst" ]; then rm "$dst"; fi
+
+        # Always refresh upstream reference for manual diffing
+        cp -f "$src" "$dst.upstream"
+        chmod u+w "$dst.upstream"
+
+        # Seed once: only write if user has no file yet
+        if [ ! -e "$dst" ]; then
+          cp "$src" "$dst"
+          chmod u+w "$dst"
+        fi
+      }
+
+      seed_mutable "${inputs.dotfiles}/vscode/settings.json" "$settings"
+    '';
+
     # The PowerShell extension only probes a hard-coded list of distro paths
     # and doesn't search $PATH, so point it at the Nix-provided pwsh. Rather
     # than letting HM manage (lock) settings.json, patch just this key into
     # the user's mutable settings.json on each rebuild.
-    home.activation.patchVSCodePwshPath = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.patchVSCodePwshPath = lib.hm.dag.entryAfter [ "seedVSCodeConfig" ] ''
       settings="$HOME/.config/Code/User/settings.json"
       mkdir -p "$(dirname "$settings")"
 
       # Drop any prior managed symlink so the file becomes user-owned again.
       if [ -L "$settings" ]; then rm "$settings"; fi
+      # Fallback: seed activation should have created this, but guard anyway.
       if [ ! -e "$settings" ]; then echo '{}' > "$settings"; chmod u+w "$settings"; fi
 
       # Skip silently if the file isn't plain JSON (e.g. user added JSONC
