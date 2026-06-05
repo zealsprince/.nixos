@@ -89,7 +89,8 @@ in
         (blender.override { rocmSupport = true; })
         krita
         handbrake
-        davinci-resolve
+        video-trimmer
+        davinci-resolve-studio
 
         audacity
         vcv-rack
@@ -97,6 +98,7 @@ in
 
         # Social & Work
         hexchat
+        halloy
         pkgs-unstable.ferdium
         pkgs-unstable.discord
         pkgs-unstable.signal-desktop
