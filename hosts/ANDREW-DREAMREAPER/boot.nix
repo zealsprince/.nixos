@@ -30,10 +30,15 @@
   # Ensure AMD GPU module is available early (matches prior configuration for this host).
   boot.initrd.kernelModules = [ "amdgpu" ];
 
-  # Force MODE4 (full ASIC) reset for RDNA2 (RX 6900 XT / Navi 21).
-  # Without this, the GPU intermittently fails to reinitialize after S3 resume,
-  # leaving the display with no signal and USB peripherals unresponsive.
-  boot.kernelParams = [ "amdgpu.reset_method=4" ];
+  # Force MODE1 reset for RDNA2 (RX 6900 XT / Navi 21).
+  # On a warm reboot the BIOS does not re-POST the GPU, so amdgpu must reset it
+  # during init. The auto-selected reset intermittently fails on this board,
+  # leaving the display with no signal and no usable TTY. MODE1 (=2) resets all
+  # IP blocks individually and is the most reliable full reset for discrete
+  # RDNA2. Do NOT use BACO (=4): it triggers runtime "gfx ring timeout" loops on
+  # this card. PCI (=5) is also unsuitable because the GPU shares a bridge with
+  # its HDMI-audio function.
+  boot.kernelParams = [ "amdgpu.reset_method=2" ];
 
   # Notes / workflow (kept here since it's directly related to this host module):
   #
