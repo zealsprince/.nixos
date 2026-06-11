@@ -115,6 +115,10 @@ in
   # input (`nixpkgs-ts3`) so we can keep using it. This knowingly pulls in
   # the insecure qtwebengine-5.15.19 (allowed in modules/nixos/common.nix).
   nixpkgs.overlays = [
+    # Affinity v3/v2 packages are unfree upstream and must be consumed through
+    # this overlay (direct package consumption is deprecated). The overlay lets
+    # them respect this host's `nixpkgs.config.allowUnfree`.
+    inputs.affinity-nix.overlays.default
     (final: prev: {
       teamspeak3 =
         (import inputs.nixpkgs-ts3 {

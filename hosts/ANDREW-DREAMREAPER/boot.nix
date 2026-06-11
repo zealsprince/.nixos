@@ -30,6 +30,11 @@
   # Ensure AMD GPU module is available early (matches prior configuration for this host).
   boot.initrd.kernelModules = [ "amdgpu" ];
 
+  # Force MODE4 (full ASIC) reset for RDNA2 (RX 6900 XT / Navi 21).
+  # Without this, the GPU intermittently fails to reinitialize after S3 resume,
+  # leaving the display with no signal and USB peripherals unresponsive.
+  boot.kernelParams = [ "amdgpu.reset_method=4" ];
+
   # Notes / workflow (kept here since it's directly related to this host module):
   #
   # Fresh install Lanzaboote workflow:

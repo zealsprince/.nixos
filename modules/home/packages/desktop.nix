@@ -83,7 +83,7 @@ in
         ghidra
 
         # Creative tools
-        inputs.affinity-nix.packages.${pkgs.stdenv.hostPlatform.system}.affinity-v3
+        affinity-v3
         pureref
         darktable
         (blender.override { rocmSupport = true; })
