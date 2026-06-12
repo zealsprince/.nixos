@@ -30,8 +30,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Pinned to 3175c17: the following commit (daf5688, 2026-06-09) breaks the
+    # Wayland KWin compositor on this host (RX 6900 XT / Navi 21), leaving no
+    # display output. Bisected via single-input `nix flake update`. Bump only
+    # after confirming a newer rev restores display. Do NOT let `nix flake
+    # update` float this input past the pinned rev.
     kwin-effects-better-blur-dx = {
-      url = "github:xarblu/kwin-effects-better-blur-dx";
+      url = "github:xarblu/kwin-effects-better-blur-dx/3175c1728ac855d54d7057de24508144bc42830b";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
