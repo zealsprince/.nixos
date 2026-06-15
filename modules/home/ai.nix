@@ -27,7 +27,7 @@ in
 
     repoPath = lib.mkOption {
       type = lib.types.str;
-      default = "${config.home.homeDirectory}/Projects/zealsprince/ai.md";
+      default = "${config.home.homeDirectory}/ai.md";
       description = "Path to a local checkout of the ai.md repo. If it is not present, wiring is skipped.";
     };
 
