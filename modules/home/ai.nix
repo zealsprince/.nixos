@@ -66,6 +66,23 @@ in
       ];
       description = "Claude config directories to write CLAUDE.md rule imports into.";
     };
+
+    acpPackage = lib.mkOption {
+      type = lib.types.str;
+      default = "@agentclientprotocol/claude-agent-acp@0.45.0";
+      description = ''
+        npm package (pinned) for the Claude ACP adapter used by the Zed
+        agent_servers. The activation step rewrites any older adapter in the
+        Zed settings.json to this value, so the package identity lives here
+        while the dotfiles seed owns the rest of the agent_servers block.
+      '';
+    };
+
+    zedSettingsFile = lib.mkOption {
+      type = lib.types.str;
+      default = "${config.home.homeDirectory}/.config/zed/settings.json";
+      description = "Zed settings.json whose Claude ACP adapter package is pinned to acpPackage.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -130,6 +147,30 @@ in
             fi
           done
         done
+      fi
+
+      # 4. Pin the Claude ACP adapter package in the Zed settings.json. This is
+      #    independent of the ai.md checkout: the dotfiles seed owns the
+      #    agent_servers structure, ai.nix owns just the adapter identity.
+      #    Rewrites the legacy adapter and any other-versioned new adapter to
+      #    the pinned value. Idempotent.
+      zed_settings="${cfg.zedSettingsFile}"
+      acp_pkg="${cfg.acpPackage}"
+      if [ -f "$zed_settings" ]; then
+        if grep -q '@zed-industries/claude-code-acp\|@agentclientprotocol/claude-agent-acp' "$zed_settings"; then
+          tmp=$(mktemp)
+          sed -E \
+            -e "s#@zed-industries/claude-code-acp(@[^\"]*)?#$acp_pkg#g" \
+            -e "s#@agentclientprotocol/claude-agent-acp(@[^\"]*)?#$acp_pkg#g" \
+            "$zed_settings" > "$tmp"
+          if ! cmp -s "$zed_settings" "$tmp"; then
+            cp "$tmp" "$zed_settings"
+            echo "ai.md: pinned Zed ACP adapter to $acp_pkg in $zed_settings"
+          fi
+          rm -f "$tmp"
+        fi
+      else
+        echo "ai.md: $zed_settings missing; skipping ACP adapter pin."
       fi
     '';
   };
