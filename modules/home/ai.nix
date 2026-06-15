@@ -38,6 +38,7 @@ in
         "${config.home.homeDirectory}/.claude/skills" # Claude Code
         "${config.home.homeDirectory}/.claude-personal/skills" # Claude Code (personal)
         "${config.home.homeDirectory}/.claude-work/skills" # Claude Code (work)
+        "${config.home.homeDirectory}/.claude-vera/skills" # Claude Code (vera)
       ];
       description = "Global skills directories to symlink each ai.md skill into.";
     };
@@ -63,8 +64,25 @@ in
         "${config.home.homeDirectory}/.claude"
         "${config.home.homeDirectory}/.claude-personal"
         "${config.home.homeDirectory}/.claude-work"
+        "${config.home.homeDirectory}/.claude-vera"
       ];
       description = "Claude config directories to write CLAUDE.md rule imports into.";
+    };
+
+    veraConfigDir = lib.mkOption {
+      type = lib.types.str;
+      default = "${config.home.homeDirectory}/.claude-vera";
+      description = "Claude config dir for the Vera profile (launched via `claude-vera`).";
+    };
+
+    veraImports = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ "VERA.md" ];
+      description = ''
+        Extra rule files (relative to repoPath) imported as always-on context
+        into veraConfigDir only. This is what makes Vera on by default in that
+        profile instead of an on-demand `/you` skill.
+      '';
     };
 
     acpPackage = lib.mkOption {
@@ -147,9 +165,27 @@ in
             fi
           done
         done
+
+        # 3b. Vera profile: import the persona as always-on context so the
+        #     `claude-vera` wrapper boots as Vera without invoking `/you`.
+        vera_md="${cfg.veraConfigDir}/CLAUDE.md"
+        for rel in ${lib.escapeShellArgs cfg.veraImports}; do
+          rule="$repo/$rel"
+          if [ ! -f "$rule" ]; then
+            echo "ai.md: vera import $rule missing; skipping."
+            continue
+          fi
+          mkdir -p "${cfg.veraConfigDir}"
+          touch "$vera_md"
+          line="@$rule"
+          if ! grep -qxF "$line" "$vera_md"; then
+            printf '%s\n' "$line" >> "$vera_md"
+            echo "ai.md: added vera import $line to $vera_md"
+          fi
+        done
       fi
 
-      # 4. Pin the Claude ACP adapter package in the Zed settings.json. This is
+      # 5. Pin the Claude ACP adapter package in the Zed settings.json. This is
       #    independent of the ai.md checkout: the dotfiles seed owns the
       #    agent_servers structure, ai.nix owns just the adapter identity.
       #    Rewrites the legacy adapter and any other-versioned new adapter to
