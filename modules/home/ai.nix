@@ -43,7 +43,17 @@ in
     claudeRulesImports = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ "rules/voice.md" ];
-      description = "Rule files (relative to repoPath) to '@import' from ~/.claude/CLAUDE.md as always-on context.";
+      description = "Rule files (relative to repoPath) to '@import' from CLAUDE.md as always-on context.";
+    };
+
+    claudeConfigDirs = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [
+        "${config.home.homeDirectory}/.claude"
+        "${config.home.homeDirectory}/.claude-personal"
+        "${config.home.homeDirectory}/.claude-work"
+      ];
+      description = "Claude config directories to write CLAUDE.md rule imports into.";
     };
   };
 
@@ -77,21 +87,23 @@ in
           echo "ai.md: $skills_src missing; skipping skill links."
         fi
 
-        # 2. Add always-on rule imports to the Claude global memory file.
-        claude_md="$HOME/.claude/CLAUDE.md"
-        for rel in ${lib.escapeShellArgs cfg.claudeRulesImports}; do
-          rule="$repo/$rel"
-          if [ ! -f "$rule" ]; then
-            echo "ai.md: rule $rule missing; skipping import."
-            continue
-          fi
-          mkdir -p "$(dirname "$claude_md")"
-          touch "$claude_md"
-          line="@$rule"
-          if ! grep -qxF "$line" "$claude_md"; then
-            printf '%s\n' "$line" >> "$claude_md"
-            echo "ai.md: added import $line to $claude_md"
-          fi
+        # 2. Add always-on rule imports to CLAUDE.md in every Claude config dir.
+        for claude_dir in ${lib.escapeShellArgs cfg.claudeConfigDirs}; do
+          claude_md="$claude_dir/CLAUDE.md"
+          for rel in ${lib.escapeShellArgs cfg.claudeRulesImports}; do
+            rule="$repo/$rel"
+            if [ ! -f "$rule" ]; then
+              echo "ai.md: rule $rule missing; skipping import."
+              continue
+            fi
+            mkdir -p "$claude_dir"
+            touch "$claude_md"
+            line="@$rule"
+            if ! grep -qxF "$line" "$claude_md"; then
+              printf '%s\n' "$line" >> "$claude_md"
+              echo "ai.md: added import $line to $claude_md"
+            fi
+          done
         done
       fi
     '';
