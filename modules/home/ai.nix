@@ -36,14 +36,25 @@ in
       default = [
         "${config.home.homeDirectory}/.agents/skills" # Zed
         "${config.home.homeDirectory}/.claude/skills" # Claude Code
+        "${config.home.homeDirectory}/.claude-personal/skills" # Claude Code (personal)
+        "${config.home.homeDirectory}/.claude-work/skills" # Claude Code (work)
       ];
       description = "Global skills directories to symlink each ai.md skill into.";
     };
 
     claudeRulesImports = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ "rules/voice.md" ];
+      default = [
+        "AGENTS.md"
+        "rules/voice.md"
+      ];
       description = "Rule files (relative to repoPath) to '@import' from CLAUDE.md as always-on context.";
+    };
+
+    zedConfigDir = lib.mkOption {
+      type = lib.types.str;
+      default = "${config.home.homeDirectory}/.config/zed";
+      description = "Zed config directory where AGENTS.md is symlinked.";
     };
 
     claudeConfigDirs = lib.mkOption {
@@ -87,7 +98,21 @@ in
           echo "ai.md: $skills_src missing; skipping skill links."
         fi
 
-        # 2. Add always-on rule imports to CLAUDE.md in every Claude config dir.
+        # 2. Symlink AGENTS.md into the Zed config directory.
+        agents_md="$repo/AGENTS.md"
+        zed_agents="${cfg.zedConfigDir}/AGENTS.md"
+        if [ -f "$agents_md" ]; then
+          mkdir -p "${cfg.zedConfigDir}"
+          if [ -e "$zed_agents" ] && [ ! -L "$zed_agents" ]; then
+            echo "ai.md: skip $zed_agents (exists and is not a symlink)"
+          else
+            ln -sfn "$agents_md" "$zed_agents"
+          fi
+        else
+          echo "ai.md: $agents_md missing; skipping Zed AGENTS.md link."
+        fi
+
+        # 3. Add always-on rule imports to CLAUDE.md in every Claude config dir.
         for claude_dir in ${lib.escapeShellArgs cfg.claudeConfigDirs}; do
           claude_md="$claude_dir/CLAUDE.md"
           for rel in ${lib.escapeShellArgs cfg.claudeRulesImports}; do
