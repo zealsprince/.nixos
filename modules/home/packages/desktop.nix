@@ -105,6 +105,7 @@ in
         pkgs-unstable.element-desktop
         teamspeak3
         teamspeak6-client
+        pkgs-unstable.zoom-us
         pkgs-unstable.teams-for-linux
         slack
 

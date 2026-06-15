@@ -33,7 +33,11 @@ in
       (with pkgs; [
         uwsm
         # --- File browser ---
-        nautilus
+        # Dolphin (Qt) instead of Nautilus: this host also runs Plasma, and
+        # both register the org.freedesktop.FileManager1 D-Bus name. Using a
+        # single file manager keeps "reveal in file manager" (used by Zed and
+        # others) consistent across both sessions.
+        kdePackages.dolphin
 
         # --- Status Bar ---
         waybar
