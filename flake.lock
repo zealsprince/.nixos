@@ -165,11 +165,11 @@
     "dotfiles": {
       "flake": false,
       "locked": {
-        "lastModified": 1781242216,
-        "narHash": "sha256-2JR6ghCZh/GRe2Rmq9RN5++5JnH7/bTTWQJthN45Mnk=",
+        "lastModified": 1781540864,
+        "narHash": "sha256-zm7uPNOiO7PZIIVKEUa1B5LQEg4YzYQ6T21w4rRRoZo=",
         "owner": "zealsprince",
         "repo": ".dotfiles",
-        "rev": "02dd0eb7f2f37d67f242cce185216ee41e625c28",
+        "rev": "867f45211e65c80c9994176144cf58433dfcbfa8",
         "type": "github"
       },
       "original": {
@@ -472,11 +472,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1781523977,
-        "narHash": "sha256-Iv5f+kUaKz5PklvOi/QjLXUpbSMIZfnntQlAmFVCbnE=",
+        "lastModified": 1781538440,
+        "narHash": "sha256-9j9C/9rKYtqs3wo3WP0Jm2hWlF7qDJrO9kbM9KrvAjA=",
         "owner": "mio-19",
         "repo": "nurpkgs",
-        "rev": "ce82b45c71db3ec0d8ca3f7789e859a8fa997930",
+        "rev": "0818a3404485ea009e7ad5497e78c2a761d10ee3",
         "type": "github"
       },
       "original": {
@@ -652,11 +652,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1781524199,
-        "narHash": "sha256-fX9fMNUSxqXBD74GCnPvHWXOp1nqZoRO/bWbdDYdw2U=",
+        "lastModified": 1781539966,
+        "narHash": "sha256-eA0tQ1Di+h83id9Kh0dh3Cw1Il/hYC27nU/SwyAQ9sk=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "242d136bfc3ea7b23ae298c4388db933c5b89189",
+        "rev": "e87773f13ebe40f64737ab35251c76ed9c951547",
         "type": "github"
       },
       "original": {

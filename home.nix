@@ -213,6 +213,11 @@ in
   home.activation.installZedConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     mkdir -p $HOME/.config/zed
 
+    # Per-account Claude Code config dirs so two Claude accounts (personal +
+    # work) can run as separate Zed ACP agents at once. Each dir holds its own
+    # login/session; CLAUDE_CONFIG_DIR in the agent_servers env points here.
+    mkdir -p $HOME/.claude-personal $HOME/.claude-work
+
     seed_mutable() {
       local src=$1
       local dst=$2
