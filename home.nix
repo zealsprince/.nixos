@@ -101,6 +101,9 @@ in
     ./modules/home/packages/base.nix
 
     ./modules/home/powershell.nix
+
+    # ai.md: link shared AI skills/rules from a local checkout (optional, private)
+    ./modules/home/ai.nix
   ];
 
   # ---------------------------------------------------------------------------
