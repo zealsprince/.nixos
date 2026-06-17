@@ -21,6 +21,9 @@ let
   */
   baseEnabled = config.my.home.base.enable or false;
 
+  # Repo-local custom package (Bitbucket Cloud CLI, gh-like). See pkgs/bkt.
+  bkt = pkgs.callPackage ../../../pkgs/bkt { };
+
   # Safe fallbacks for channels that don't have the latest attributes yet.
   nodejsPkg =
     if pkgs ? nodejs_24 then
@@ -78,6 +81,7 @@ let
       pkgs-unstable.yazi
       eza
       gh
+      bkt
 
       # Nice to have
       pkgs-unstable.yt-dlp
