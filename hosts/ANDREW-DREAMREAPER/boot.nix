@@ -38,7 +38,31 @@
   # RDNA2. Do NOT use BACO (=4): it triggers runtime "gfx ring timeout" loops on
   # this card. PCI (=5) is also unsuitable because the GPU shares a bridge with
   # its HDMI-audio function.
-  boot.kernelParams = [ "amdgpu.reset_method=2" ];
+  #
+  # The black-screen-on-wake thing. Happens maybe 1 in 4-5 suspends. Screen
+  # stays dead, keyboard lights up but nothing responds, can't even switch VT.
+  # It's the GPU firmware (SMU) not coming back on resume, then the DMA engine
+  # wedges a few seconds later. Look for this in `journalctl -b -1` after a bad
+  # wake:
+  #   SMU: I'm not done with your previous command ...
+  #   RunDcBtc failed! / Failed to setup smc hw!
+  #   resume of IP block <smu> failed -62
+  #   ring sdma0 timeout ... -> Fence fallback timer expired (floods forever)
+  # reset_method above is useless for this, it's the resume that dies, not a
+  # reset. pcie_aspm=off is the usual culprit/fix for Navi 2x SMU resume
+  # timeouts. Trades a bit of idle power. Not confirmed yet, give it a week of
+  # suspends. If it still hangs, rip it out and try the next thing.
+  #
+  # next things to try, one at a time, check the journal each time:
+  #   - amdgpu.aspm=0
+  #   - amdgpu.runpm=0
+  #   - linuxPackages_latest (SMU resume fixes trickle in upstream)
+  #   - BIOS: kill Power Supply Idle Control, global C-states, ASPM
+  # when it does hang, REISUB (Alt+SysRq, r e i s u b) instead of holding power.
+  boot.kernelParams = [
+    "amdgpu.reset_method=2"
+    "pcie_aspm=off"
+  ];
 
   # Notes / workflow (kept here since it's directly related to this host module):
   #
