@@ -48,6 +48,7 @@ in
       default = [
         "AGENTS.md"
         "rules/voice.md"
+        "rules/git.md"
       ];
       description = "Rule files (relative to repoPath) to '@import' from CLAUDE.md as always-on context.";
     };
