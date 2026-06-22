@@ -73,7 +73,7 @@ let
       gemini = {
         id = "gemini";
         name = "Gemini";
-        type = "gemini";
+        type = "google";
         api_key = "$GEMINI_API_KEY";
         models = [
           {

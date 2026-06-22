@@ -6,6 +6,8 @@
 
 let
   cfg = config.my.home.ai;
+  # Every skills dir any bucket links into, deduped. Used to prune stale links.
+  allSkillDirs = lib.unique (lib.concatLists (lib.attrValues cfg.skillBuckets));
 in
 {
   # ---------------------------------------------------------------------------
@@ -31,16 +33,36 @@ in
       description = "Path to a local checkout of the ai.md repo. If it is not present, wiring is skipped.";
     };
 
-    skillTargets = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [
-        "${config.home.homeDirectory}/.agents/skills" # Zed
-        "${config.home.homeDirectory}/.claude/skills" # Claude Code
-        "${config.home.homeDirectory}/.claude-personal/skills" # Claude Code (personal)
-        "${config.home.homeDirectory}/.claude-work/skills" # Claude Code (work)
-        "${config.home.homeDirectory}/.claude-vera/skills" # Claude Code (vera)
-      ];
-      description = "Global skills directories to symlink each ai.md skill into.";
+    # Skills live in buckets (subfolders of skills/). Each bucket links into a
+    # different set of tool config dirs, so personal skills never leak into the
+    # work account and vice versa:
+    #   shared/   -> everywhere
+    #   personal/ -> Zed (personal) + the personal/vera Claude configs
+    #   work/     -> the DEFAULT Claude config (~/.claude), which is the work
+    #                account that the bare `claude` command and VSCode use.
+    skillBuckets = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+      default =
+        let
+          h = config.home.homeDirectory;
+        in
+        {
+          shared = [
+            "${h}/.agents/skills" # Zed (personal)
+            "${h}/.claude/skills" # Claude Code default = work (VSCode)
+            "${h}/.claude-personal/skills"
+            "${h}/.claude-vera/skills"
+          ];
+          personal = [
+            "${h}/.agents/skills" # Zed = personal
+            "${h}/.claude-personal/skills"
+            "${h}/.claude-vera/skills"
+          ];
+          work = [
+            "${h}/.claude/skills" # default config = work account
+          ];
+        };
+      description = "Map of skills/<bucket> subfolder -> skills dirs to symlink that bucket's skills into.";
     };
 
     claudeRulesImports = lib.mkOption {
@@ -62,9 +84,8 @@ in
     claudeConfigDirs = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [
-        "${config.home.homeDirectory}/.claude"
+        "${config.home.homeDirectory}/.claude" # default = work account (VSCode + bare `claude`)
         "${config.home.homeDirectory}/.claude-personal"
-        "${config.home.homeDirectory}/.claude-work"
         "${config.home.homeDirectory}/.claude-vera"
       ];
       description = "Claude config directories to write CLAUDE.md rule imports into.";
@@ -112,24 +133,45 @@ in
       if [ ! -d "$repo" ]; then
         echo "ai.md: no checkout at $repo; skipping wiring."
       else
-        # 1. Symlink each skill folder into every target skills directory.
+        # 1. Symlink each skill into its bucket's target dirs.
         if [ -d "$skills_src" ]; then
-          for target in ${lib.escapeShellArgs cfg.skillTargets}; do
-            mkdir -p "$target"
-            for skill in "$skills_src"/*/; do
-              [ -d "$skill" ] || continue
-              name=$(basename "$skill")
-              link="$target/$name"
-
-              # Don't clobber a real directory that isn't one of our symlinks.
-              if [ -e "$link" ] && [ ! -L "$link" ]; then
-                echo "ai.md: skip $link (exists and is not a symlink)"
-                continue
-              fi
-
-              ln -sfn "$skill" "$link"
+          # First prune any links we previously made (symlinks pointing into
+          # this repo's skills tree) so skills that moved buckets or were
+          # deleted don't linger. Real dirs and foreign symlinks are left alone.
+          for target in ${lib.escapeShellArgs allSkillDirs}; do
+            [ -d "$target" ] || continue
+            for link in "$target"/*; do
+              [ -L "$link" ] || continue
+              case "$(readlink "$link")" in
+                "$skills_src"/*) rm -f "$link" ;;
+              esac
             done
           done
+
+          # Then (re)link each bucket into its targets.
+          ${lib.concatStringsSep "\n" (
+            lib.mapAttrsToList (bucket: targets: ''
+              bucket_src="$skills_src/${bucket}"
+              if [ -d "$bucket_src" ]; then
+                for target in ${lib.escapeShellArgs targets}; do
+                  mkdir -p "$target"
+                  for skill in "$bucket_src"/*/; do
+                    [ -d "$skill" ] || continue
+                    name=$(basename "$skill")
+                    link="$target/$name"
+
+                    # Don't clobber a real directory that isn't one of our symlinks.
+                    if [ -e "$link" ] && [ ! -L "$link" ]; then
+                      echo "ai.md: skip $link (exists and is not a symlink)"
+                      continue
+                    fi
+
+                    ln -sfn "$skill" "$link"
+                  done
+                done
+              fi
+            '') cfg.skillBuckets
+          )}
         else
           echo "ai.md: $skills_src missing; skipping skill links."
         fi
