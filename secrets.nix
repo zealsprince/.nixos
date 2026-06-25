@@ -49,4 +49,16 @@ in
   #   .nixos/secrets/crush-gemini-api-key.age
   # ----------------------------------------------------------------------------
   "secrets/crush-gemini-api-key.age".publicKeys = crushRecipients;
+
+  # ----------------------------------------------------------------------------
+  # Hivecom Depot: API key (depot_...)
+  #
+  # Minted from https://hivecom.net/sharing (labelled ".nixos"). Used by the
+  # depot-upload script to authenticate uploads. Shared across machines, so it's
+  # encrypted to the same recipients as the Crush keys.
+  #
+  # Encrypted file path:
+  #   .nixos/secrets/depot-api-key.age
+  # ----------------------------------------------------------------------------
+  "secrets/depot-api-key.age".publicKeys = crushRecipients;
 }

@@ -104,7 +104,23 @@ in
 
     # ai.md: link shared AI skills/rules from a local checkout (optional, private)
     ./modules/home/ai.nix
+
+    # Hivecom depot upload (script + macOS keybinds)
+    ./modules/home/depot.nix
   ];
+
+  # ---------------------------------------------------------------------------
+  # Hivecom depot upload
+  #
+  # Installs `depot-upload` and, on macOS, binds Cmd+Alt+Shift+3/4/6 (full /
+  # region screenshot / clipboard) to upload and copy the resulting URL.
+  # The Linux WM binds (Plasma/Hyprland) are not wired yet; this just adds the
+  # command there.
+  # ---------------------------------------------------------------------------
+  my.home.depot = {
+    enable = true;
+    keybinds.enable = true;
+  };
 
   # ---------------------------------------------------------------------------
   # agenix (Home Manager): decrypt secrets at activation time (not in the store)
