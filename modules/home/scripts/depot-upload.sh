@@ -12,24 +12,49 @@
 #   shot-region   interactive region/window screenshot -> upload
 #   clipboard     upload the image currently on the clipboard
 #
-# macOS tools are referenced by absolute path so this works under launchd/skhd,
-# which runs with a minimal PATH.
+# Cross-platform: macOS and Linux/Wayland.
+#   macOS  - tools are referenced by absolute path so this works under
+#            launchd/skhd, which runs with a minimal PATH.
+#   Linux  - tools are called by name (curl, grim, slurp, wl-copy/wl-paste,
+#            notify-send). The Nix wrapper puts them on PATH so the Plasma
+#            global shortcut, which also runs with a minimal PATH, finds them.
 
 set -euo pipefail
 
 DEPOT_URL="${DEPOT_URL:-https://depot.hivecom.net}"
 MAX_BYTES=$((100 * 1024 * 1024)) # depot rejects files over 100 MB
 
-CURL=/usr/bin/curl
-SCREENCAPTURE=/usr/sbin/screencapture
-PBCOPY=/usr/bin/pbcopy
-PBPASTE=/usr/bin/pbpaste
-OSASCRIPT=/usr/bin/osascript
-STAT=/usr/bin/stat
+OS="$(uname)"
+
+if [ "$OS" = "Darwin" ]; then
+  CURL=/usr/bin/curl
+  SCREENCAPTURE=/usr/sbin/screencapture
+  PBCOPY=/usr/bin/pbcopy
+  PBPASTE=/usr/bin/pbpaste
+  OSASCRIPT=/usr/bin/osascript
+  STAT=/usr/bin/stat
+else
+  CURL=curl
+  STAT=stat
+fi
 
 notify() { # title, message
-  [ -x "$OSASCRIPT" ] || return 0
-  "$OSASCRIPT" -e "display notification \"$2\" with title \"$1\"" >/dev/null 2>&1 || true
+  if [ "$OS" = "Darwin" ]; then
+    [ -x "$OSASCRIPT" ] || return 0
+    "$OSASCRIPT" -e "display notification \"$2\" with title \"$1\"" >/dev/null 2>&1 || true
+  else
+    command -v notify-send >/dev/null 2>&1 || return 0
+    notify-send "$1" "$2" >/dev/null 2>&1 || true
+  fi
+}
+
+# Copy stdin to the clipboard.
+clip_copy() {
+  if [ "$OS" = "Darwin" ]; then
+    "$PBCOPY"
+  else
+    wl-copy
+  fi
 }
 
 fail() {
@@ -49,7 +74,11 @@ read_key() {
 }
 
 filesize() {
-  "$STAT" -f%z "$1" 2>/dev/null || stat -c%s "$1"
+  if [ "$OS" = "Darwin" ]; then
+    "$STAT" -f%z "$1"
+  else
+    "$STAT" -c%s "$1"
+  fi
 }
 
 # Make a temp file with a clean basename (it shows up in the depot URL).
@@ -86,7 +115,7 @@ upload() { # path
   url="$(printf '%s' "$resp" | sed -n 's/.*"url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
   [ -n "$url" ] || fail "no url in response: $resp"
 
-  printf '%s' "$url" | "$PBCOPY"
+  printf '%s' "$url" | clip_copy
   notify "Depot upload" "Copied: $url"
   echo "$url"
 }
@@ -94,16 +123,29 @@ upload() { # path
 cmd_shot_full() {
   local out
   out="$(tmp_named screenshot.png)"
-  "$SCREENCAPTURE" -x "$out" # -x: silent, no shutter sound
+  if [ "$OS" = "Darwin" ]; then
+    "$SCREENCAPTURE" -x "$out" # -x: silent, no shutter sound
+  else
+    grim "$out"
+  fi
   upload "$out"
   rm -rf "${out%/*}"
 }
 
 cmd_shot_region() {
-  local out
+  local out geom
   out="$(tmp_named screenshot.png)"
-  "$SCREENCAPTURE" -i "$out" # interactive region/window select
-  # User pressed Esc -> no file written. Treat as a quiet cancel.
+  if [ "$OS" = "Darwin" ]; then
+    "$SCREENCAPTURE" -i "$out" # interactive region/window select
+  else
+    # slurp exits non-zero if the user presses Esc -> quiet cancel.
+    if ! geom="$(slurp)"; then
+      rm -rf "${out%/*}"
+      exit 0
+    fi
+    grim -g "$geom" "$out"
+  fi
+  # No file written (Esc on macOS, empty grab on Linux) -> quiet cancel.
   if [ ! -s "$out" ]; then
     rm -rf "${out%/*}"
     exit 0
@@ -112,7 +154,7 @@ cmd_shot_region() {
   rm -rf "${out%/*}"
 }
 
-cmd_clipboard() {
+cmd_clipboard_macos() {
   local out path
 
   # A copied file in Finder (Cmd-C) -> upload the real file, keeping its name.
@@ -152,6 +194,58 @@ OSA
   else
     rm -rf "${out%/*}"
     fail "clipboard has no file, image, or text"
+  fi
+}
+
+cmd_clipboard_linux() {
+  local out types
+
+  types="$(wl-paste --list-types 2>/dev/null || true)"
+
+  # A file copied from a file manager arrives as text/uri-list. Upload the first
+  # local file, keeping its name (mirrors the macOS furl path above).
+  if printf '%s\n' "$types" | grep -qi '^text/uri-list'; then
+    local uri path
+    uri="$(wl-paste --type text/uri-list 2>/dev/null | head -n1 | tr -d '\r')"
+    case "$uri" in
+    file://*)
+      # Percent-decode the URI body (file:///foo%20bar -> /foo bar).
+      path="$(printf '%b' "$(printf '%s' "${uri#file://}" | sed 's/%/\\x/g')")"
+      if [ -f "$path" ]; then
+        upload "$path"
+        return
+      fi
+      ;;
+    esac
+  fi
+
+  # An image on the clipboard -> upload as PNG.
+  if printf '%s\n' "$types" | grep -qi '^image/'; then
+    out="$(tmp_named clipboard.png)"
+    if wl-paste --type image/png >"$out" 2>/dev/null && [ -s "$out" ]; then
+      upload "$out"
+      rm -rf "${out%/*}"
+      return
+    fi
+    rm -rf "${out%/*}"
+  fi
+
+  # Fall back to clipboard text uploaded as a .txt file.
+  out="$(tmp_named clipboard.txt)"
+  if wl-paste --no-newline >"$out" 2>/dev/null && [ -s "$out" ]; then
+    upload "$out"
+    rm -rf "${out%/*}"
+  else
+    rm -rf "${out%/*}"
+    fail "clipboard has no file, image, or text"
+  fi
+}
+
+cmd_clipboard() {
+  if [ "$OS" = "Darwin" ]; then
+    cmd_clipboard_macos
+  else
+    cmd_clipboard_linux
   fi
 }
 

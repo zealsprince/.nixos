@@ -105,17 +105,17 @@ in
     # ai.md: link shared AI skills/rules from a local checkout (optional, private)
     ./modules/home/ai.nix
 
-    # Hivecom depot upload (script + macOS keybinds)
+    # Hivecom depot upload (script + keybinds)
     ./modules/home/depot.nix
   ];
 
   # ---------------------------------------------------------------------------
   # Hivecom depot upload
   #
-  # Installs `depot-upload` and, on macOS, binds Cmd+Alt+Shift+3/4/6 (full /
-  # region screenshot / clipboard) to upload and copy the resulting URL.
-  # The Linux WM binds (Plasma/Hyprland) are not wired yet; this just adds the
-  # command there.
+  # Installs `depot-upload` and binds full / region screenshot / clipboard to
+  # upload and copy the resulting URL. macOS: Cmd+Alt+Shift+3/4/6 via skhd.
+  # Linux/Plasma: Ctrl+Alt+Shift+3/4/6 via global shortcuts. Hyprland binds live
+  # in its own WM config, not here.
   # ---------------------------------------------------------------------------
   my.home.depot = {
     enable = true;

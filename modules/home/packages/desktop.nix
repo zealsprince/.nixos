@@ -84,7 +84,7 @@ in
 
         # Creative tools
         affinity-v3
-        pureref
+        pkgs-unstable.pureref
         darktable
         (blender.override { rocmSupport = true; })
         krita
@@ -93,7 +93,7 @@ in
         davinci-resolve-studio
 
         audacity
-        vcv-rack
+        pkgs-unstable.vcv-rack
         renoise
 
         # Social & Work

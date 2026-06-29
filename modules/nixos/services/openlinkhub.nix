@@ -3,20 +3,6 @@
 let
   cfg = config.my.services.openlinkhub;
 
-  # Keep this in sync with the nixpkgs package version you’re using.
-  # This module seeds runtime assets from the upstream repo at the same tag.
-  version = "0.6.9";
-
-  upstreamSource = pkgs.fetchFromGitHub {
-    owner = "jurkovic-nikola";
-    repo = "OpenLinkHub";
-    tag = version;
-
-    # Must match nixpkgs `pkgs.openlinkhub.src` hash for this version.
-    # If nixpkgs bumps, update `version` + `hash` together.
-    hash = "sha256-5y1G5RUYsuHIUyoZEF9uUxq8sN6lQqXjpatBqkzlO4w=";
-  };
-
   # Minimal safety net for the earliest bootstrapping; once upstream database is copied,
   # it will likely already provide this file.
   defaultRgbJson = pkgs.writeText "openlinkhub-rgb.json" ''
@@ -105,32 +91,42 @@ in
 
         STATE_DIR="${cfg.stateDir}"
 
+        # Seed assets straight from the package we run, so they always match the
+        # binary. The assets live under opt/OpenLinkHub in the nixpkgs package.
+        ASSETS="${cfg.package}/opt/OpenLinkHub"
+
+        # Marker carries the exact package store path. When the package changes,
+        # this stops matching and we re-sync. Pinning a separate source by version
+        # is what let static/ drift out of sync and panic loadThemes() on upgrade.
+        TOKEN="${cfg.package}"
+        MARKER="$STATE_DIR/.seeded-version"
+
         # --------------------------------------------------------------------
-        # Seed OpenLinkHub runtime assets (one-time).
-        #
-        # OpenLinkHub expects these directories to exist relative to ConfigPath:
-        #   - database/ (language, keyboard definitions, etc.)
+        # OpenLinkHub expects these directories relative to its working dir:
+        #   - database/ (language, keyboard/device definitions, runtime state)
         #   - web/      (templates/*.html)
-        #   - static/   (css/js/images; served from ./static)
+        #   - static/   (css/js/images, including css/themes; served from ./static)
         #
         # Many modules fatally error if they cannot read these folders.
         # --------------------------------------------------------------------
 
         mkdir -p "$STATE_DIR/database" "$STATE_DIR/web" "$STATE_DIR/static"
 
-        if [ ! -e "$STATE_DIR/database/.openlinkhub-seeded" ]; then
-          cp -a ${upstreamSource}/database/. "$STATE_DIR/database/"
-          touch "$STATE_DIR/database/.openlinkhub-seeded"
-        fi
+        if [ "$(cat "$MARKER" 2>/dev/null || true)" != "$TOKEN" ]; then
+          # static/ and web/ are immutable assets owned by the package. Replace
+          # them wholesale so a newer binary never reads a stale layout.
+          rm -rf "$STATE_DIR/static" "$STATE_DIR/web"
+          mkdir -p "$STATE_DIR/static" "$STATE_DIR/web"
+          cp -a "$ASSETS/static/." "$STATE_DIR/static/"
+          cp -a "$ASSETS/web/." "$STATE_DIR/web/"
+          chmod -R u+w "$STATE_DIR/static" "$STATE_DIR/web"
 
-        if [ ! -e "$STATE_DIR/web/.openlinkhub-seeded" ]; then
-          cp -a ${upstreamSource}/web/. "$STATE_DIR/web/"
-          touch "$STATE_DIR/web/.openlinkhub-seeded"
-        fi
+          # database/ mixes shipped defaults with runtime state, so only add new
+          # files (e.g. new device definitions) without clobbering user data.
+          cp -an "$ASSETS/database/." "$STATE_DIR/database/" || true
+          chmod -R u+w "$STATE_DIR/database"
 
-        if [ ! -e "$STATE_DIR/static/.openlinkhub-seeded" ]; then
-          cp -a ${upstreamSource}/static/. "$STATE_DIR/static/"
-          touch "$STATE_DIR/static/.openlinkhub-seeded"
+          echo "$TOKEN" > "$MARKER"
         fi
 
         # Ensure user-writable subdirs exist even if upstream layout changes.
