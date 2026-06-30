@@ -120,6 +120,9 @@ in
   my.home.depot = {
     enable = true;
     keybinds.enable = true;
+
+    # Saved-copy dirs default to ~/Sharing/{Screenshots,Clipboards} (good on
+    # macOS too). DREAMREAPER overrides these to the Zeal data mount in flake.nix.
   };
 
   # ---------------------------------------------------------------------------

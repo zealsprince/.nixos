@@ -292,6 +292,14 @@
 
                 # AMD-specific desktop addons (ROCm, etc.)
                 my.home.packages.desktop.amd.enable = true;
+
+                # Keep depot captures on the Zeal data mount, not ~/Sharing.
+                my.home.depot.screenshotDir = "/mnt/Zeal/Andrew/Sharing/Screenshots";
+                my.home.depot.clipboardDir = "/mnt/Zeal/Andrew/Sharing/Clipboards";
+
+                # Spectacle saves locally to the same Sharing tree (off Dropbox).
+                my.home.wm.plasma6.spectacle.imageSaveLocation = "/mnt/Zeal/Andrew/Sharing/Screenshots";
+                my.home.wm.plasma6.spectacle.videoSaveLocation = "/mnt/Zeal/Andrew/Sharing/Screencasts";
               };
             }
 

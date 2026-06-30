@@ -12,17 +12,30 @@
 #   shot-region   interactive region/window screenshot -> upload
 #   clipboard     upload the image currently on the clipboard
 #
+# Optional saved copies: if $DEPOT_SHOT_DIR is set, screenshots are also written
+# there (timestamped) before upload; likewise $DEPOT_CLIP_DIR for clipboard
+# uploads. Unset means upload-only, no local copy.
+#
 # Cross-platform: macOS and Linux/Wayland.
 #   macOS  - tools are referenced by absolute path so this works under
 #            launchd/skhd, which runs with a minimal PATH.
-#   Linux  - tools are called by name (curl, grim, slurp, wl-copy/wl-paste,
-#            notify-send). The Nix wrapper puts them on PATH so the Plasma
-#            global shortcut, which also runs with a minimal PATH, finds them.
+#   Linux  - tools are called by name (curl, wl-copy/wl-paste, notify-send, and
+#            for screenshots Spectacle on KWin/Plasma or grim+slurp on wlroots).
+#            The Nix wrapper puts them on PATH so the Plasma global shortcut,
+#            which also runs with a minimal PATH, finds them.
+#
+# Screenshot backend: KWin does not implement wlr-screencopy, so grim can't
+# capture on Plasma. We use Spectacle there and fall back to grim/slurp on
+# wlroots compositors (Hyprland), picked by $XDG_CURRENT_DESKTOP.
 
 set -euo pipefail
 
 DEPOT_URL="${DEPOT_URL:-https://depot.hivecom.net}"
 MAX_BYTES=$((100 * 1024 * 1024)) # depot rejects files over 100 MB
+
+# Where upload() saves a local copy. Set per-subcommand at dispatch to
+# $DEPOT_SHOT_DIR or $DEPOT_CLIP_DIR. Empty means no local copy.
+SAVE_DIR=""
 
 OS="$(uname)"
 
@@ -57,6 +70,11 @@ clip_copy() {
   fi
 }
 
+# True on a KDE/Plasma session, where we take screenshots with Spectacle.
+is_kde() {
+  printf '%s' "${XDG_CURRENT_DESKTOP:-}" | grep -qi kde
+}
+
 fail() {
   notify "Depot upload failed" "$1"
   echo "depot-upload: $1" >&2
@@ -89,6 +107,32 @@ tmp_named() { # filename
   printf '%s/%s' "$dir" "$1"
 }
 
+# Save a timestamped copy of a file into a directory. Best-effort: a failure
+# here never blocks the upload. No-op when the dir is empty.
+save_copy() { # src, dir
+  local src="$1" dir="$2" base dest
+  [ -n "$dir" ] || return 0
+  # Create freely under $HOME (always present). Elsewhere (e.g. a /mnt mount)
+  # only create when the parent already exists, so an unmounted drive doesn't
+  # get a phantom tree written onto the root fs under its mountpoint.
+  case "$dir" in
+  "${HOME:-/nonexistent}"/*) : ;;
+  *)
+    if [ ! -d "${dir%/*}" ]; then
+      echo "depot-upload: ${dir%/*} missing (mount not ready?), skipping saved copy" >&2
+      return 0
+    fi
+    ;;
+  esac
+  if ! mkdir -p "$dir" 2>/dev/null; then
+    echo "depot-upload: could not create $dir, skipping saved copy" >&2
+    return 0
+  fi
+  base="$(basename "$src")"
+  dest="$dir/${base%.*}-$(date +%Y%m%d-%H%M%S).${base##*.}"
+  cp -- "$src" "$dest" 2>/dev/null || echo "depot-upload: could not save copy to $dest" >&2
+}
+
 upload() { # path
   local f="$1" key resp url errfile size
   [ -f "$f" ] || fail "file not found: $f"
@@ -97,6 +141,9 @@ upload() { # path
   if [ "$size" -gt "$MAX_BYTES" ]; then
     fail "file is $((size / 1024 / 1024)) MB, over the 100 MB depot limit"
   fi
+
+  # Keep a local copy (when configured) before attempting the upload.
+  save_copy "$f" "$SAVE_DIR"
 
   key="$(read_key)"
   errfile="$(mktemp "${TMPDIR:-/tmp}/depot-err.XXXXXX")"
@@ -125,8 +172,10 @@ cmd_shot_full() {
   out="$(tmp_named screenshot.png)"
   if [ "$OS" = "Darwin" ]; then
     "$SCREENCAPTURE" -x "$out" # -x: silent, no shutter sound
+  elif is_kde; then
+    spectacle -b -n -f -o "$out" # -b: background, -n: no notification
   else
-    grim "$out"
+    grim "$out" # wlroots (Hyprland)
   fi
   upload "$out"
   rm -rf "${out%/*}"
@@ -137,15 +186,19 @@ cmd_shot_region() {
   out="$(tmp_named screenshot.png)"
   if [ "$OS" = "Darwin" ]; then
     "$SCREENCAPTURE" -i "$out" # interactive region/window select
+  elif is_kde; then
+    # Spectacle draws its own region selector; Esc writes no file, caught by
+    # the empty-file check below as a quiet cancel.
+    spectacle -b -n -r -o "$out" || true
   else
     # slurp exits non-zero if the user presses Esc -> quiet cancel.
     if ! geom="$(slurp)"; then
       rm -rf "${out%/*}"
       exit 0
     fi
-    grim -g "$geom" "$out"
+    grim -g "$geom" "$out" # wlroots (Hyprland)
   fi
-  # No file written (Esc on macOS, empty grab on Linux) -> quiet cancel.
+  # No file written (cancel on any platform) -> quiet cancel.
   if [ ! -s "$out" ]; then
     rm -rf "${out%/*}"
     exit 0
@@ -254,9 +307,18 @@ file)
   shift
   upload "${1:?usage: depot-upload file <path>}"
   ;;
-shot-full | full) cmd_shot_full ;;
-shot-region | region) cmd_shot_region ;;
-clipboard | clip) cmd_clipboard ;;
+shot-full | full)
+  SAVE_DIR="${DEPOT_SHOT_DIR:-}"
+  cmd_shot_full
+  ;;
+shot-region | region)
+  SAVE_DIR="${DEPOT_SHOT_DIR:-}"
+  cmd_shot_region
+  ;;
+clipboard | clip)
+  SAVE_DIR="${DEPOT_CLIP_DIR:-}"
+  cmd_clipboard
+  ;;
 *)
   echo "usage: depot-upload {file <path>|shot-full|shot-region|clipboard}" >&2
   exit 2

@@ -507,6 +507,21 @@ in
         description = "List of applications (WM classes) to exclude from session management.";
       };
     };
+
+    spectacle = {
+      imageSaveLocation = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        example = "/mnt/Zeal/Andrew/Sharing/Screenshots";
+        description = "Spectacle screenshot save directory (written to spectaclerc). Null leaves it unmanaged.";
+      };
+      videoSaveLocation = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        example = "/mnt/Zeal/Andrew/Sharing/Screencasts";
+        description = "Spectacle screen-recording save directory (written to spectaclerc). Null leaves it unmanaged.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -696,6 +711,14 @@ in
 
       # ---- Session Management ----
       ${kwriteconfig} --file ksmserverrc --group General --key excludeApps "${lib.concatStringsSep "," cfg.session.excludeApps}"
+
+      # ---- Spectacle save locations (spectaclerc stores them as file:// URLs) ----
+      ${lib.optionalString (cfg.spectacle.imageSaveLocation != null) ''
+        ${kwriteconfig} --file spectaclerc --group ImageSave --key imageSaveLocation "file://${cfg.spectacle.imageSaveLocation}"
+      ''}
+      ${lib.optionalString (cfg.spectacle.videoSaveLocation != null) ''
+        ${kwriteconfig} --file spectaclerc --group VideoSave --key videoSaveLocation "file://${cfg.spectacle.videoSaveLocation}"
+      ''}
 
       ${lib.optionalString cfg.shortcuts.enable ''
         # ---- Spectacle ----
