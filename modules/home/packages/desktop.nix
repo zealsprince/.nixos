@@ -88,6 +88,7 @@ in
         darktable
         (blender.override { rocmSupport = true; })
         krita
+        prusa-slicer
         handbrake
         video-trimmer
         davinci-resolve-studio
