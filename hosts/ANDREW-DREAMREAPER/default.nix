@@ -56,6 +56,9 @@ in
     # Storage / mounts
     ../../modules/nixos/storage/auto-mounts.nix
 
+    # Cap kernel write buffering so copy progress and unmounts are honest
+    ../../modules/nixos/storage/writeback.nix
+
     # Polkit rules (host-specific)
     ./polkit-udisks2.nix
 
