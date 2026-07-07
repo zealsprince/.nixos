@@ -87,6 +87,9 @@ in
         pkgs-unstable.pureref
         darktable
         (blender.override { rocmSupport = true; })
+        freecad
+        openscad
+        openscad-lsp
         krita
         prusa-slicer
         handbrake
