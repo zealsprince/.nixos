@@ -12,6 +12,7 @@
 
   imports = [
     ./services/ckb-next.nix
+    ./services/idevice.nix
     ./services/openlinkhub.nix
     ./services/opensnitch.nix
     ./services/mullvad.nix

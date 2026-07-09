@@ -190,6 +190,9 @@ in
 
   my.services.samba.enable = true;
 
+  # iPhone USB support: file access in Dolphin (afc://) and idevice* tools.
+  my.services.idevice.enable = true;
+
   my.desktop.plasma6 = {
     enable = true;
     videoDrivers = [ "amdgpu" ];

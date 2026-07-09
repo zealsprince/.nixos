@@ -11,9 +11,9 @@ let
 in
 {
   # ---------------------------------------------------------------------------
-  # ai.md wiring (skills + rules shared across AI tools)
+  # .ai.md wiring (skills + rules shared across AI tools)
   #
-  # `ai.md` is a PRIVATE repo, so it is deliberately NOT a flake input: that
+  # `.ai.md` is a PRIVATE repo, so it is deliberately NOT a flake input: that
   # would make every `nix` eval/build try to fetch it, and fail on any machine
   # without access. Instead we link a *local checkout* at activation time and
   # quietly skip the whole thing when the checkout is not present. Nothing here
@@ -23,14 +23,14 @@ in
   # stays the single source of truth and edits are picked up live (no rebuild).
   # ---------------------------------------------------------------------------
   options.my.home.ai = {
-    enable = lib.mkEnableOption "ai.md skills/rules wiring" // {
+    enable = lib.mkEnableOption ".ai.md skills/rules wiring" // {
       default = true;
     };
 
     repoPath = lib.mkOption {
       type = lib.types.str;
-      default = "${config.home.homeDirectory}/ai.md";
-      description = "Path to a local checkout of the ai.md repo. If it is not present, wiring is skipped.";
+      default = "${config.home.homeDirectory}/.ai.md";
+      description = "Path to a local checkout of the .ai.md repo. If it is not present, wiring is skipped.";
     };
 
     # Skills live in buckets (subfolders of skills/). Each bucket links into a
@@ -131,7 +131,7 @@ in
       skills_src="$repo/skills"
 
       if [ ! -d "$repo" ]; then
-        echo "ai.md: no checkout at $repo; skipping wiring."
+        echo ".ai.md: no checkout at $repo; skipping wiring."
       else
         # 1. Symlink each skill into its bucket's target dirs.
         if [ -d "$skills_src" ]; then
@@ -162,7 +162,7 @@ in
 
                     # Don't clobber a real directory that isn't one of our symlinks.
                     if [ -e "$link" ] && [ ! -L "$link" ]; then
-                      echo "ai.md: skip $link (exists and is not a symlink)"
+                      echo ".ai.md: skip $link (exists and is not a symlink)"
                       continue
                     fi
 
@@ -173,7 +173,7 @@ in
             '') cfg.skillBuckets
           )}
         else
-          echo "ai.md: $skills_src missing; skipping skill links."
+          echo ".ai.md: $skills_src missing; skipping skill links."
         fi
 
         # 2. Symlink AGENTS.md into the Zed config directory.
@@ -182,12 +182,12 @@ in
         if [ -f "$agents_md" ]; then
           mkdir -p "${cfg.zedConfigDir}"
           if [ -e "$zed_agents" ] && [ ! -L "$zed_agents" ]; then
-            echo "ai.md: skip $zed_agents (exists and is not a symlink)"
+            echo ".ai.md: skip $zed_agents (exists and is not a symlink)"
           else
             ln -sfn "$agents_md" "$zed_agents"
           fi
         else
-          echo "ai.md: $agents_md missing; skipping Zed AGENTS.md link."
+          echo ".ai.md: $agents_md missing; skipping Zed AGENTS.md link."
         fi
 
         # 3. Add always-on rule imports to CLAUDE.md in every Claude config dir.
@@ -196,7 +196,7 @@ in
           for rel in ${lib.escapeShellArgs cfg.claudeRulesImports}; do
             rule="$repo/$rel"
             if [ ! -f "$rule" ]; then
-              echo "ai.md: rule $rule missing; skipping import."
+              echo ".ai.md: rule $rule missing; skipping import."
               continue
             fi
             mkdir -p "$claude_dir"
@@ -204,7 +204,7 @@ in
             line="@$rule"
             if ! grep -qxF "$line" "$claude_md"; then
               printf '%s\n' "$line" >> "$claude_md"
-              echo "ai.md: added import $line to $claude_md"
+              echo ".ai.md: added import $line to $claude_md"
             fi
           done
         done
@@ -215,7 +215,7 @@ in
         for rel in ${lib.escapeShellArgs cfg.veraImports}; do
           rule="$repo/$rel"
           if [ ! -f "$rule" ]; then
-            echo "ai.md: vera import $rule missing; skipping."
+            echo ".ai.md: vera import $rule missing; skipping."
             continue
           fi
           mkdir -p "${cfg.veraConfigDir}"
@@ -223,13 +223,13 @@ in
           line="@$rule"
           if ! grep -qxF "$line" "$vera_md"; then
             printf '%s\n' "$line" >> "$vera_md"
-            echo "ai.md: added vera import $line to $vera_md"
+            echo ".ai.md: added vera import $line to $vera_md"
           fi
         done
       fi
 
       # 5. Pin the Claude ACP adapter package in the Zed settings.json. This is
-      #    independent of the ai.md checkout: the dotfiles seed owns the
+      #    independent of the .ai.md checkout: the dotfiles seed owns the
       #    agent_servers structure, ai.nix owns just the adapter identity.
       #    Rewrites the legacy adapter and any other-versioned new adapter to
       #    the pinned value. Idempotent.
@@ -244,12 +244,12 @@ in
             "$zed_settings" > "$tmp"
           if ! cmp -s "$zed_settings" "$tmp"; then
             cp "$tmp" "$zed_settings"
-            echo "ai.md: pinned Zed ACP adapter to $acp_pkg in $zed_settings"
+            echo ".ai.md: pinned Zed ACP adapter to $acp_pkg in $zed_settings"
           fi
           rm -f "$tmp"
         fi
       else
-        echo "ai.md: $zed_settings missing; skipping ACP adapter pin."
+        echo ".ai.md: $zed_settings missing; skipping ACP adapter pin."
       fi
     '';
   };
