@@ -6,11 +6,11 @@
 
 let
   pname = "spotiflac";
-  version = "7.0.9";
+  version = "7.1.9";
 
   src = fetchurl {
-    url = "https://github.com/afkarxyz/SpotiFLAC/releases/download/v7.0.9/SpotiFLAC.AppImage";
-    sha256 = "1zrc5i5vm09vszs5vm5p56vr6kc3mbz7yl8x0l299dm6gzrv91fq";
+    url = "https://github.com/spotbye/SpotiFLAC/releases/download/v${version}/SpotiFLAC.AppImage";
+    sha256 = "0zy6in97ch9z1c2pyzd8cvaqvf74kdds6d41ycpqnmffjpw7i3h6";
   };
 
   appimageContents = appimageTools.extract { inherit pname version src; };
@@ -43,7 +43,7 @@ appimageTools.wrapType2 {
 
   meta = {
     description = "Download Spotify songs in FLAC quality using Deezer";
-    homepage = "https://github.com/afkarxyz/SpotiFLAC";
+    homepage = "https://github.com/spotbye/SpotiFLAC";
     platforms = [ "x86_64-linux" ];
     mainProgram = "spotiflac";
   };
