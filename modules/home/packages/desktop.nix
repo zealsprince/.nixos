@@ -65,10 +65,11 @@ in
 
         # Hate it but I need it
         spotify
-        spotiflac
 
         # Tidal yippie
-        tidal-dl
+        tonearm
+        sone
+        streamrip
         # Needs --no-sandbox as a real argument: the in-app sandbox setting
         # applies too late, Chromium still spawns the sandboxed zygote and
         # renderers forked from it die on /dev/shm (white screen).

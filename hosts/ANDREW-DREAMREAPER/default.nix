@@ -496,6 +496,7 @@ in
   networking.firewall.allowedTCPPorts = [
     5357 # WSD (Web Services on Devices)
     8612 # eSCL (AirScan) - common
+    24800 # Deskflow server
   ];
 
   # UDP 5353 is mDNS (Avahi); handled via `services.avahi.openFirewall = true`.
