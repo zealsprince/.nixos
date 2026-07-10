@@ -40,10 +40,12 @@ in
         resources
         obsidian
         libreoffice-still
+        deskflow
 
         # Dropbox (Maestral) + Dolphin service-menu helper runtime deps
         maestral
         maestral-gui
+
         coreutils # realpath
         xdg-utils # xdg-open
         libnotify # notify-send
@@ -64,6 +66,20 @@ in
         # Hate it but I need it
         spotify
         spotiflac
+
+        # Tidal yippie
+        tidal-dl
+        # Needs --no-sandbox as a real argument: the in-app sandbox setting
+        # applies too late, Chromium still spawns the sandboxed zygote and
+        # renderers forked from it die on /dev/shm (white screen).
+        (symlinkJoin {
+          name = "tidal-hifi";
+          paths = [ tidal-hifi ];
+          nativeBuildInputs = [ makeWrapper ];
+          postBuild = ''
+            wrapProgram $out/bin/tidal-hifi --add-flags "--no-sandbox"
+          '';
+        })
 
         # Development tools
         pkgs-unstable.zed-editor-fhs

@@ -116,6 +116,11 @@ in
     # fail to initialize/unlock with: "Pam module \"/etc/pam.d/hyprlock\" does not exist!"
     programs.hyprlock.enable = true;
 
+    # programs.hyprlock force-enables services.hypridle, which hooks
+    # graphical-session.target and therefore starts (and crashes, no config)
+    # under Plasma too. We start hypridle from Hyprland's startup.conf instead.
+    services.hypridle.enable = lib.mkForce false;
+
     # If you want this host to boot into Hyprland by default (optional),
     # you can set:
     #   services.displayManager.defaultSession = cfg.sessionName;
