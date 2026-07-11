@@ -75,6 +75,13 @@
       flake = false;
     };
 
+    # streamrip dev branch (nixpkgs pins the v2.1.0 tag). Pinned via
+    # flake.lock, bump with `nix flake update streamrip-src`.
+    streamrip-src = {
+      url = "github:nathom/streamrip/dev";
+      flake = false;
+    };
+
     # -------------------------------------------------------------------------
     # THEME INPUTS (placeholders you can swap out later)
     #

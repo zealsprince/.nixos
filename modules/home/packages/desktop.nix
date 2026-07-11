@@ -9,6 +9,16 @@
 
 let
   spotiflac = pkgs.callPackage ../../../pkgs/spotiflac/default.nix { };
+
+  # streamrip from the upstream dev branch (flake input) instead of the
+  # v2.1.0 tag nixpkgs builds. The nixpkgs patch and ffmpeg path sed still
+  # apply on dev.
+  streamrip-dev = pkgs.streamrip.overridePythonAttrs (old: {
+    version = "2.2.0-dev";
+    src = inputs.streamrip-src;
+    # Stale upstream test: expects genre 'Pop', fixture data says 'Rock'.
+    disabledTests = (old.disabledTests or [ ]) ++ [ "test_album_metadata_qobuz" ];
+  });
 in
 
 let
@@ -69,7 +79,7 @@ in
         # Tidal yippie
         tonearm
         sone
-        streamrip
+        streamrip-dev
         # Needs --no-sandbox as a real argument: the in-app sandbox setting
         # applies too late, Chromium still spawns the sandboxed zygote and
         # renderers forked from it die on /dev/shm (white screen).

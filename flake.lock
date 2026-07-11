@@ -738,6 +738,7 @@
         "nixpkgs-ts3": "nixpkgs-ts3",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nur": "nur",
+        "streamrip-src": "streamrip-src",
         "upf": "upf",
         "zen-browser": "zen-browser"
       }
@@ -798,6 +799,23 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "streamrip-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1776744762,
+        "narHash": "sha256-L29g53DPLb9F5bufs+Rp7EjEpz5Cp+G+paSWIH6wJP4=",
+        "owner": "nathom",
+        "repo": "streamrip",
+        "rev": "e3291615ba6be34aa76df19da8aeb6f41673c6a0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nathom",
+        "ref": "dev",
+        "repo": "streamrip",
         "type": "github"
       }
     },
