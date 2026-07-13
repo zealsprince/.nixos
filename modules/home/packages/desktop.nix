@@ -110,6 +110,7 @@ in
         ghidra
 
         # Creative tools
+        pkgs-unstable.gimp-with-plugins
         affinity-v3
         pkgs-unstable.pureref
         darktable
