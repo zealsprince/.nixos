@@ -24,6 +24,9 @@ let
   # Repo-local custom package (Bitbucket Cloud CLI, gh-like). See pkgs/bkt.
   bkt = pkgs.callPackage ../../../pkgs/bkt { };
 
+  # Repo-local custom package (Bandcamp downloader from PyPI). See pkgs/campdown.
+  campdown = pkgs.callPackage ../../../pkgs/campdown { };
+
   # Safe fallbacks for channels that don't have the latest attributes yet.
   nodejsPkg =
     if pkgs ? nodejs_24 then
@@ -85,6 +88,7 @@ let
 
       # Nice to have
       pkgs-unstable.yt-dlp
+      campdown
       radare2
 
       # Cloud CLIs
