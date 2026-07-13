@@ -40,8 +40,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Meo98 fork of mrshmllow/affinity-nix: Intel Iris Xe fixes, d2d1 bezier
+    # safety patches, DXVK 2.4.1 alongside vkd3d-proton. Same overlay attrs
+    # (affinity-v3 etc.), so it's a drop-in swap.
     affinity-nix = {
-      url = "github:mrshmllow/affinity-nix";
+      url = "github:Meo98/affinity-nix-fork";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
