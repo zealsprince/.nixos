@@ -19,6 +19,39 @@ let
     # Stale upstream test: expects genre 'Pop', fixture data says 'Rock'.
     disabledTests = (old.disabledTests or [ ]) ++ [ "test_album_metadata_qobuz" ];
   });
+
+  # PhotoGIMP as a second launcher next to stock GIMP: same gimp binary,
+  # but GIMP3_DIRECTORY points it at its own config dir so the Photoshop
+  # layout and stock GIMP settings never touch each other. The config is
+  # seeded once by the seedPhotoGimpConfig activation below; GIMP rewrites
+  # its rc files at runtime, so they have to stay mutable copies.
+  photogimp = pkgs.symlinkJoin {
+    name = "photogimp";
+    paths = [
+      (pkgs.writeShellScriptBin "photogimp" ''
+        export GIMP3_DIRECTORY="''${XDG_CONFIG_HOME:-$HOME/.config}/PhotoGIMP"
+        exec ${pkgs-unstable.gimp-with-plugins}/bin/gimp "$@"
+      '')
+      (pkgs.makeDesktopItem {
+        name = "photogimp";
+        desktopName = "PhotoGIMP";
+        genericName = "Image Editor";
+        comment = "GIMP with a Photoshop-style layout and shortcuts";
+        exec = "photogimp %U";
+        icon = "photogimp";
+        categories = [
+          "Graphics"
+          "2DGraphics"
+          "RasterGraphics"
+          "GTK"
+        ];
+      })
+      (pkgs.runCommand "photogimp-icons" { } ''
+        mkdir -p $out/share
+        cp -r ${inputs.photogimp}/.local/share/icons $out/share/icons
+      '')
+    ];
+  };
 in
 
 let
@@ -111,6 +144,7 @@ in
 
         # Creative tools
         pkgs-unstable.gimp-with-plugins
+        photogimp
         affinity-v3
         pkgs-unstable.pureref
         darktable
@@ -204,6 +238,19 @@ in
       }
 
       seed_mutable "${inputs.dotfiles}/vscode/settings.json" "$settings"
+    '';
+
+    # Seed-only PhotoGIMP config for the launcher above. Copied once so GIMP
+    # can freely rewrite shortcuts/session state afterwards. To re-apply the
+    # upstream layout, delete ~/.config/PhotoGIMP and reactivate. Upstream
+    # ships these as GIMP 3.0 files; GIMP 3.2 reads them fine.
+    home.activation.seedPhotoGimpConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      photogimp_dir="''${XDG_CONFIG_HOME:-$HOME/.config}/PhotoGIMP"
+      if [ ! -e "$photogimp_dir" ]; then
+        mkdir -p "$photogimp_dir"
+        cp -r ${inputs.photogimp}/.config/GIMP/3.0/. "$photogimp_dir/"
+        chmod -R u+w "$photogimp_dir"
+      fi
     '';
 
     # The PowerShell extension only probes a hard-coded list of distro paths

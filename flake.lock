@@ -680,6 +680,22 @@
         "type": "github"
       }
     },
+    "photogimp": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1783809975,
+        "narHash": "sha256-y1J6mPmjESq7DzP5nK5BsTITfOYSEUgA5EU/35bdYeQ=",
+        "owner": "Diolinux",
+        "repo": "PhotoGIMP",
+        "rev": "8d1291013ca69e0a4d1f01eb48d2e0bc7bde50e5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Diolinux",
+        "repo": "PhotoGIMP",
+        "type": "github"
+      }
+    },
     "plugin-loader-src": {
       "flake": false,
       "locked": {
@@ -753,6 +769,7 @@
         "nixpkgs-ts3": "nixpkgs-ts3",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nur": "nur",
+        "photogimp": "photogimp",
         "streamrip-src": "streamrip-src",
         "upf": "upf",
         "zen-browser": "zen-browser"

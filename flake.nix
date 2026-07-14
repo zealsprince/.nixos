@@ -85,6 +85,13 @@
       flake = false;
     };
 
+    # PhotoGIMP (Photoshop-style GIMP config overlay). Raw files, wired up
+    # as a separate launcher in modules/home/packages/desktop.nix.
+    photogimp = {
+      url = "github:Diolinux/PhotoGIMP";
+      flake = false;
+    };
+
     # -------------------------------------------------------------------------
     # THEME INPUTS (placeholders you can swap out later)
     #
