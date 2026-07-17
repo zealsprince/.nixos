@@ -25,6 +25,40 @@ let
   # layout and stock GIMP settings never touch each other. The config is
   # seeded once by the seedPhotoGimpConfig activation below; GIMP rewrites
   # its rc files at runtime, so they have to stay mutable copies.
+  # Affinity's wine runtime is built from affinity-nix's pinned nixpkgs-wine
+  # (glibc 2.40 today), but wine picks up GPU drivers from the host's
+  # /run/opengl-driver, where mesa tracks current nixpkgs. Once host mesa
+  # needs a glibc symbol the pinned runtime lacks (GLIBC_ABI_GNU2_TLS), every
+  # Vulkan ICD fails to load inside the sandbox: DXGI enumerates no adapters,
+  # hardware acceleration dies, and files that need a render device livelock
+  # the UI thread on open. Point the Vulkan loader at a mesa built from the
+  # same nixpkgs as the wine runtime so the ABI matches even when the fork
+  # bumps its pin.
+  affinity-mesa =
+    (import inputs.affinity-nix.inputs.nixpkgs-wine {
+      inherit (pkgs.stdenv.hostPlatform) system;
+    }).mesa.drivers;
+  affinity-icds = lib.concatStringsSep ":" [
+    "${affinity-mesa}/share/vulkan/icd.d/radeon_icd.x86_64.json"
+    "${affinity-mesa}/share/vulkan/icd.d/intel_icd.x86_64.json"
+  ];
+  affinity-v3-gpu = pkgs.symlinkJoin {
+    name = "affinity-v3-gpu";
+    paths = [ pkgs.affinity-v3 ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram $out/bin/affinity-v3 \
+        --set VK_DRIVER_FILES "${affinity-icds}" \
+        --set VK_ICD_FILENAMES "${affinity-icds}"
+      # The bundled desktop item Execs the unwrapped runner by absolute store
+      # path, which would bypass the wrapper. Repoint it at the wrapped bin.
+      entry=$out/share/applications/affinity-v3.desktop
+      real=$(readlink -f "$entry")
+      rm "$entry"
+      sed "s|Exec=[^ ]*/bin/affinity-v3|Exec=$out/bin/affinity-v3|" "$real" > "$entry"
+    '';
+  };
+
   photogimp = pkgs.symlinkJoin {
     name = "photogimp";
     paths = [
@@ -145,7 +179,7 @@ in
         # Creative tools
         pkgs-unstable.gimp-with-plugins
         photogimp
-        affinity-v3
+        affinity-v3-gpu
         pkgs-unstable.pureref
         darktable
         (blender.override { rocmSupport = true; })
