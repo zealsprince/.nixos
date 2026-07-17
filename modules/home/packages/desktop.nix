@@ -42,9 +42,32 @@ let
     "${affinity-mesa}/share/vulkan/icd.d/radeon_icd.x86_64.json"
     "${affinity-mesa}/share/vulkan/icd.d/intel_icd.x86_64.json"
   ];
+
+  # affinity-nix's runner force-runs `wineboot --update` on every launch, which
+  # reinstalls wine.inf against the read-only overlay. Under experimental wow64
+  # some 32-bit child registrations (e.g. iexplore /RegServer) fail and pop a
+  # "rundll32.exe - This application could not be started" dialog, twice, every
+  # launch, plus the "Wine configuration is being updated" popup. Removing
+  # DISPLAY for just the wineboot call makes wine's null graphics driver swallow
+  # those MessageBoxes (wineboot's real registry/dll work is unaffected, and the
+  # app itself still launches with DISPLAY). Rebuild the runner from a patched
+  # source copy; everything else in the graph (base prefix, wine, apl) is cached.
+  affinity-nix-patched-src = pkgs.runCommand "affinity-nix-runner-patched" { } ''
+    cp -r ${inputs.affinity-nix} $out
+    chmod -R u+w $out
+    substituteInPlace $out/crates/runner/src/main.rs \
+      --replace-fail 'cmd!(WINE, "wineboot", "--update")' \
+        'cmd!(WINE, "wineboot", "--update").env_remove("DISPLAY").env_remove("WAYLAND_DISPLAY")'
+  '';
+  affinity-v3-patched = pkgs.callPackage "${affinity-nix-patched-src}/packages/affinity-v3/package.nix" {
+    inputs = inputs.affinity-nix.inputs;
+    stdPath =
+      p: [ p.zenity p.curl p.zstd p.coreutils p.gnused p.gnugrep p.wget p.busybox ];
+  };
+
   affinity-v3-gpu = pkgs.symlinkJoin {
     name = "affinity-v3-gpu";
-    paths = [ pkgs.affinity-v3 ];
+    paths = [ affinity-v3-patched ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
       wrapProgram $out/bin/affinity-v3 \
