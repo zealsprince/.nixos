@@ -170,6 +170,9 @@
                   jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
                     doCheck = false;
                     doInstallCheck = false;
+                    # jeepney 0.9's import check pulls in jeepney.io.trio, which
+                    # needs `outcome`, missing on python 3.14. Skip the check.
+                    pythonImportsCheck = [ ];
                   });
                 }
               );
@@ -214,6 +217,9 @@
                   jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
                     doCheck = false;
                     doInstallCheck = false;
+                    # jeepney 0.9's import check pulls in jeepney.io.trio, which
+                    # needs `outcome`, missing on python 3.14. Skip the check.
+                    pythonImportsCheck = [ ];
                   });
                 }
               );
