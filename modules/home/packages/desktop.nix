@@ -196,6 +196,7 @@ in
         love
 
         # Reverse engineering
+        qFlipper
         cutter
         ghidra
 
