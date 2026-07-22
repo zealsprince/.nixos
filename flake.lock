@@ -783,11 +783,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784694012,
-        "narHash": "sha256-wGRs800fAokHnwyI3JknPzP69aNLb4bhxquNw17uNQA=",
+        "lastModified": 1784753057,
+        "narHash": "sha256-JCfLb89D+nKEClNSzgo18nCFXZAMtbf/Cn87DJy3t04=",
         "owner": "zealsprince",
         "repo": "rox",
-        "rev": "49ac8c028831bcd71d5853c6887793c520f2fba6",
+        "rev": "e58309ecd95d568f529d1f7df42d0a95617db82a",
         "type": "github"
       },
       "original": {
