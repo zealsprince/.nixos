@@ -10,6 +10,35 @@
 let
   spotiflac = pkgs.callPackage ../../../pkgs/spotiflac/default.nix { };
 
+  # rox ships its icon as `Icon=rox`, but "rox" is also the ROX-Filer file
+  # manager, and icon theme sets (BeautySolar, Tela, etc.) alias that name to
+  # a file-manager glyph. The active theme wins over hicolor, so KDE draws the
+  # file-manager icon instead of rox's own. Rename the icon to a unique
+  # `rox-music` no theme claims and repoint the .desktop at it, so lookup
+  # falls through to rox's hicolor art. Binary and WM class stay `rox`.
+  # symlinkJoin only relinks share/, so the rust build is untouched/cached.
+  rox = pkgs.symlinkJoin {
+    name = "rox";
+    paths = [ inputs.rox.packages.${pkgs.stdenv.hostPlatform.system}.rox ];
+    postBuild = ''
+      icons=$out/share/icons/hicolor/scalable/apps
+      rox_svg=$(readlink -f "$icons/rox.svg")
+      rm "$icons/rox.svg"
+      ln -s "$rox_svg" "$icons/rox-music.svg"
+
+      if [ -e "$out/share/pixmaps/rox.png" ]; then
+        rox_png=$(readlink -f "$out/share/pixmaps/rox.png")
+        rm "$out/share/pixmaps/rox.png"
+        ln -s "$rox_png" "$out/share/pixmaps/rox-music.png"
+      fi
+
+      entry=$out/share/applications/rox.desktop
+      real=$(readlink -f "$entry")
+      rm "$entry"
+      sed 's/^Icon=rox$/Icon=rox-music/' "$real" > "$entry"
+    '';
+  };
+
   # streamrip from the upstream dev branch (flake input) instead of the
   # v2.1.0 tag nixpkgs builds. The nixpkgs patch and ffmpeg path sed still
   # apply on dev.
@@ -157,7 +186,7 @@ in
         xclip
 
         deluge
-        tauon
+        rox
         syncplay
         pkgs-unstable.plezy
         opensnitch-ui

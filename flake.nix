@@ -78,6 +78,15 @@
       flake = false;
     };
 
+    # rox: gpui-based desktop music player. Its own flake exposes
+    # packages.<system>.rox; wired into modules/home/packages/desktop.nix.
+    # Follows unstable since upstream builds against nixos-unstable (newer
+    # rust/gpui deps) rather than the pinned 26.05.
+    rox = {
+      url = "github:zealsprince/rox";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+
     # streamrip dev branch (nixpkgs pins the v2.1.0 tag). Pinned via
     # flake.lock, bump with `nix flake update streamrip-src`.
     streamrip-src = {
