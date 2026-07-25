@@ -114,7 +114,7 @@ let
       nix-direnv
 
       # AI Agents
-      claude-code
+      pkgs-unstable.claude-code
       claude-monitor
     ]
     ++ lib.optional (
