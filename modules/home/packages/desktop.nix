@@ -279,25 +279,17 @@ in
       ])
       ++ cfg.packages;
 
-    # VSCode: manage extensions via Home Manager.
-    # The editor itself is installed as a package above (pkgs-unstable.vscode).
-    programs.vscode = {
-      enable = true;
-      package = pkgs-unstable.vscode;
-
-      profiles.default.extensions = with pkgs.vscode-extensions; [
-        # .NET / C# development
-        ms-dotnettools.csharp
-
-        # PowerShell (pwsh installed via modules/home/powershell.nix)
-        ms-vscode.powershell
-      ];
-
-      # NOTE: deliberately no `userSettings` here. Setting it makes Home
-      # Manager write settings.json as a read-only nix-store symlink, which
-      # VSCode surfaces as a locked/"managed" config. We keep settings.json a
-      # mutable, user-owned file and only patch the dynamic pwsh path below.
-    };
+    # VSCode: the editor is installed as a package above (pkgs-unstable.vscode)
+    # and extensions are managed by VSCode itself, from the marketplace. Native
+    # extension binaries work because nix-ld is enabled.
+    #
+    # NOTE: deliberately no `programs.vscode` here. Declaring even a single
+    # extension through it makes Home Manager wipe and regenerate
+    # ~/.vscode/extensions/extensions.json whenever the extension derivations
+    # rebuild (any flake.lock bump), which resurrects every stale extension
+    # folder on disk and resets extension state. Likewise no `userSettings`,
+    # which would lock settings.json as a read-only nix-store symlink. We keep
+    # all VSCode state mutable and only patch the dynamic pwsh path below.
 
     # Seed-only config: copy upstream once, then leave user edits alone.
     # An `.upstream` sidecar is refreshed every activation for manual diffing:
