@@ -40,8 +40,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Meo98 fork of mrshmllow/affinity-nix: Intel Iris Xe fixes, d2d1 bezier
+    # safety patches, DXVK 2.4.1 alongside vkd3d-proton. Same overlay attrs
+    # (affinity-v3 etc.), so it's a drop-in swap.
     affinity-nix = {
-      url = "github:mrshmllow/affinity-nix";
+      url = "github:Meo98/affinity-nix-fork";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -72,6 +75,29 @@
 
     neko-zed-dark = {
       url = "github:zealsprince/neko-zed-dark";
+      flake = false;
+    };
+
+    # rox: gpui-based desktop music player. Its own flake exposes
+    # packages.<system>.rox; wired into modules/home/packages/desktop.nix.
+    # Follows unstable since upstream builds against nixos-unstable (newer
+    # rust/gpui deps) rather than the pinned 26.05.
+    rox = {
+      url = "github:zealsprince/rox";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+
+    # streamrip dev branch (nixpkgs pins the v2.1.0 tag). Pinned via
+    # flake.lock, bump with `nix flake update streamrip-src`.
+    streamrip-src = {
+      url = "github:nathom/streamrip/dev";
+      flake = false;
+    };
+
+    # PhotoGIMP (Photoshop-style GIMP config overlay). Raw files, wired up
+    # as a separate launcher in modules/home/packages/desktop.nix.
+    photogimp = {
+      url = "github:Diolinux/PhotoGIMP";
       flake = false;
     };
 
@@ -153,6 +179,9 @@
                   jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
                     doCheck = false;
                     doInstallCheck = false;
+                    # jeepney 0.9's import check pulls in jeepney.io.trio, which
+                    # needs `outcome`, missing on python 3.14. Skip the check.
+                    pythonImportsCheck = [ ];
                   });
                 }
               );
@@ -197,6 +226,9 @@
                   jeepney = pyPrev.jeepney.overridePythonAttrs (old: {
                     doCheck = false;
                     doInstallCheck = false;
+                    # jeepney 0.9's import check pulls in jeepney.io.trio, which
+                    # needs `outcome`, missing on python 3.14. Skip the check.
+                    pythonImportsCheck = [ ];
                   });
                 }
               );

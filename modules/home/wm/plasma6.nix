@@ -361,6 +361,10 @@ in
           description = "Start minimized to tray.";
         };
       };
+
+      deskflow = {
+        enable = lib.mkEnableOption "Autostart Deskflow (tray)";
+      };
     };
 
     postLogin = {
@@ -665,6 +669,17 @@ in
         ".config/autostart/ckb-next.desktop".text = mkAutostartDesktopTray {
           name = "ckb-next";
           exec = "${ckbNextPkg}/bin/ckb-next --background";
+        };
+      })
+
+      # Deskflow: with "start core with GUI" enabled in its settings, launching
+      # the GUI at login also starts the server/client automatically. Enable
+      # "hide to tray on startup" in Deskflow's preferences to avoid the main
+      # window appearing at login (closeToTray only affects manual closes).
+      (lib.mkIf (cfg.autostart.enable && cfg.autostart.deskflow.enable) {
+        ".config/autostart/org.deskflow.deskflow.desktop".text = mkAutostartDesktopTray {
+          name = "Deskflow";
+          exec = "${pkgs.deskflow}/bin/deskflow";
         };
       })
 

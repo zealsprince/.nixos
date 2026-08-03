@@ -146,9 +146,15 @@ in
   };
   my.services.mullvad = {
     enable = true;
-    # Use the unstable package to get 2025.14 which contains fixes for the
-    # userspace WireGuard (DAITA) IPv6 address setup failure (os error 2).
-    package = pkgs-unstable.mullvad-vpn;
+    # This is the CLI/daemon package, not the GUI. Newer nixpkgs split the two:
+    # `mullvad` ships mullvad-daemon, the CLI, and mullvad-exclude, while
+    # `mullvad-vpn` is now GUI-only. The daemon service must point here or its
+    # ExecStart resolves to a mullvad-daemon binary that doesn't exist. The GUI
+    # app is installed separately in the desktop package set.
+    #
+    # Unstable also gets us the userspace WireGuard (DAITA) IPv6 setup fix
+    # (os error 2), and keeps the daemon version matched to the GUI.
+    package = pkgs-unstable.mullvad;
   };
   services.ollama = {
     enable = true;
@@ -496,6 +502,7 @@ in
   networking.firewall.allowedTCPPorts = [
     5357 # WSD (Web Services on Devices)
     8612 # eSCL (AirScan) - common
+    24800 # Deskflow server
   ];
 
   # UDP 5353 is mDNS (Avahi); handled via `services.avahi.openFirewall = true`.

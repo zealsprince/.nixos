@@ -118,7 +118,9 @@ let
       nix-direnv
 
       # AI Agents
-      claude-code
+      # claude-code comes from the official native installer (self-updating,
+      # lands in ~/.local/bin/claude which shadows the nix profile). Runs fine
+      # because nix-ld is enabled. Reinstall: curl -fsSL https://claude.ai/install.sh | bash
       claude-monitor
     ]
     ++ lib.optional (

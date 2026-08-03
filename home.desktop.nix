@@ -138,6 +138,11 @@ in
       teams.enable = true;
       ferdium.enable = true;
 
+      # Deskflow: launch to tray; its own "start core with GUI" setting brings
+      # the server up (it will still show the input capture portal dialog once
+      # per session, no way around that until Deskflow 1.27 + newer Plasma).
+      deskflow.enable = true;
+
       # FlexDesigner: start silently and keep it in the tray (best-effort)
       flexDesigner = {
         enable = false;
