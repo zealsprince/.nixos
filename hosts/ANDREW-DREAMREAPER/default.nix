@@ -221,8 +221,9 @@ in
   my.desktop.hyprland = {
     enable = true;
 
-    # Use unstable Hyprland (requested: 0.53.1 from nixos-unstable)
-    package = pkgs-unstable.hyprland;
+    # Takes pkgs.hyprland from the module default. Was pinned to
+    # pkgs-unstable.hyprland, but unstable's 0.56.1 can't build against its own
+    # glaze 8.0.0 (CMake wants 7...<8), so stay on the main channel.
   };
 
   my.programs._1password = {
