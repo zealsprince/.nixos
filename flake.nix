@@ -236,6 +236,15 @@
           ];
         };
 
+      # Modules that only make sense on the Macs, kept out of ./home.nix so the
+      # Linux hosts never evaluate them. The model servers are the case in
+      # point: they point tools installed outside Nix at an external volume
+      # under /Volumes, neither of which exists on Linux, where Ollama runs as a
+      # system service instead (my.services.ollama).
+      darwinOnlyModules = [
+        ./modules/home/darwin/ai-external.nix
+      ];
+
       # Helper to create a standalone Home Manager configuration
       mkHome =
         {
@@ -358,12 +367,14 @@
         andrew = mkHome {
           system = "aarch64-darwin";
           username = "andrew";
+          modules = darwinOnlyModules;
         };
 
         # Explicit macOS target
         zealsprince-mac = mkHome {
           system = "aarch64-darwin";
           username = "andrew";
+          modules = darwinOnlyModules;
         };
 
         # Desktop Home Manager profile (GUI + WM + desktop package sets).
