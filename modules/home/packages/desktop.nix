@@ -240,6 +240,7 @@ in
         openscad
         openscad-lsp
         krita
+        aseprite
         prusa-slicer
         handbrake
         video-trimmer
