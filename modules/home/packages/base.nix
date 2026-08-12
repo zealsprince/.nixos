@@ -27,6 +27,9 @@ let
   # Repo-local custom package (Bandcamp downloader from PyPI). See pkgs/campdown.
   campdown = pkgs.callPackage ../../../pkgs/campdown { };
 
+  # Repo-local custom package (TIDAL downloader from PyPI). See pkgs/tidal-dl-ng.
+  tidal-dl-ng = pkgs.callPackage ../../../pkgs/tidal-dl-ng { };
+
   # Safe fallbacks for channels that don't have the latest attributes yet.
   nodejsPkg =
     if pkgs ? nodejs_24 then
@@ -89,6 +92,7 @@ let
       # Nice to have
       pkgs-unstable.yt-dlp
       campdown
+      tidal-dl-ng
       radare2
 
       # Cloud CLIs
