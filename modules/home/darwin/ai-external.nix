@@ -31,14 +31,29 @@ in
   #    options below.
   #
   # Layout under the root:
+  #   Models             every model I own, shared
+  #   Input, Output      ComfyUI's working directories
   #   ollama/models      OLLAMA_MODELS
   #   drawthings/models  gRPCServerCLI's argument, DRAWTHINGS_MODELS_DIR
-  #   comfyui            the checkout, its .venv and its models/
+  #   comfyui            the Comfy Desktop install: ComfyUI/ and standalone-env/
   #   logs, run          one log and one pidfile per service
   #
+  # ComfyUI is the odd one out, because two things can start it and I want
+  # either to work: the Desktop app, and `serve-ai-external start comfyui`. They
+  # drive the same install, so they have to agree on where models and images go.
+  # Models are settled in ComfyUI/extra_model_paths.yaml, which main.py reads on
+  # its own no matter who launched it. Input and Output can only be passed as
+  # arguments, so the Desktop app's settings.json and the options below both
+  # name them and have to stay in step.
+  #
+  # What they must never do is run at once, since they share a port, a workflow
+  # database and a user directory. Nothing here can stop the Desktop app, so the
+  # script checks the port before it starts anything and stands down if the app
+  # already has it.
+  #
   # The servers themselves aren't packaged here. Ollama, gRPCServerCLI-macOS and
-  # the ComfyUI checkout are installed outside Nix, and the script names them
-  # when it can't find one.
+  # the ComfyUI install come from outside Nix, and the script names them when it
+  # can't find one.
   # ---------------------------------------------------------------------------
   options.my.home.aiExternal = {
     # On by default, since the flake only hands this module to the Macs.
@@ -48,7 +63,7 @@ in
 
     root = lib.mkOption {
       type = lib.types.str;
-      default = "/Volumes/SSD/ai";
+      default = "/Volumes/SSD/AI";
       description = "Directory holding every model store, log and pidfile. Overridable at runtime with EXTERNAL_AI_ROOT.";
     };
 
@@ -87,6 +102,37 @@ in
       default = 8188;
       description = "Port for the ComfyUI server.";
     };
+
+    comfyui.modelsDir = lib.mkOption {
+      type = lib.types.str;
+      default = "${cfg.root}/Models";
+      description = ''
+        The shared model root. ComfyUI itself learns about this from
+        ComfyUI/extra_model_paths.yaml rather than from here; the script only
+        needs it to report a size in `status`.
+      '';
+    };
+
+    comfyui.inputDir = lib.mkOption {
+      type = lib.types.str;
+      default = "${cfg.root}/Input";
+      description = "ComfyUI's input directory. Has to match inputDir in the Desktop app's settings.json.";
+    };
+
+    comfyui.outputDir = lib.mkOption {
+      type = lib.types.str;
+      default = "${cfg.root}/Output";
+      description = "ComfyUI's output directory. Has to match outputDir in the Desktop app's settings.json.";
+    };
+
+    comfyui.extraArgs = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ "--enable-manager" ];
+      description = ''
+        Arguments appended to main.py. Defaults to what the Desktop app passes,
+        so a headless run behaves the same way.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -102,6 +148,10 @@ in
           DRAWTHINGS_TLS_DEFAULT=${if cfg.drawThings.tls then "1" else "0"}
           DRAWTHINGS_CACHE_DEFAULT=${toString cfg.drawThings.weightsCacheGiB}
           COMFYUI_PORT_DEFAULT=${toString cfg.comfyui.port}
+          COMFYUI_MODELS_DEFAULT=${lib.escapeShellArg cfg.comfyui.modelsDir}
+          COMFYUI_INPUT_DEFAULT=${lib.escapeShellArg cfg.comfyui.inputDir}
+          COMFYUI_OUTPUT_DEFAULT=${lib.escapeShellArg cfg.comfyui.outputDir}
+          COMFYUI_EXTRA_ARGS_DEFAULT=${lib.escapeShellArg (lib.concatStringsSep " " cfg.comfyui.extraArgs)}
         ''
         + builtins.readFile ./scripts/serve-ai-external.sh
       ))

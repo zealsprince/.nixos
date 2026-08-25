@@ -79,8 +79,15 @@ models_of() {
   case "$1" in
     ollama) echo "$ROOT/ollama/models" ;;
     drawthings) echo "$ROOT/drawthings/models" ;;
-    comfyui) echo "$ROOT/comfyui/models" ;;
+    comfyui) echo "$COMFYUI_MODELS_DEFAULT" ;;
   esac
+}
+
+# Whether anything at all holds a port, which is not the same question as
+# whether this script started it. The Comfy Desktop app drives the same install
+# behind my back, and its instance has no pidfile here.
+port_busy() {
+  (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && exec 3>&-
 }
 
 # Records the pid and confirms the thing survived its first second, so a server
@@ -131,14 +138,31 @@ start_one() {
       ;;
 
     comfyui)
-      local tree="$ROOT/comfyui" py="$ROOT/comfyui/.venv/bin/python"
+      # The Comfy Desktop layout: the install root holds the interpreter in
+      # standalone-env/, and the checkout with its .venv one level down.
+      local tree="$ROOT/comfyui/ComfyUI" py="$ROOT/comfyui/ComfyUI/.venv/bin/python"
       if [ ! -x "$py" ]; then
-        die "no ComfyUI virtualenv at $py. Create it with:
-  python3 -m venv $tree/.venv && $tree/.venv/bin/pip install -r $tree/requirements.txt"
+        die "no ComfyUI interpreter at $py. Install ComfyUI through the Desktop app,
+pointing it at $ROOT/comfyui."
       fi
+      # The Desktop app can have started this same install, in which case it
+      # owns the port, the workflow database and the user directory, and a
+      # second server would fight it for all three.
+      if port_busy "$COMFYUI_PORT_DEFAULT"; then
+        die "something already holds port $COMFYUI_PORT_DEFAULT, most likely the Comfy Desktop app.
+Quit it before starting ComfyUI headless."
+      fi
+      mkdir -p "$COMFYUI_INPUT_DEFAULT" "$COMFYUI_OUTPUT_DEFAULT"
+      # Models come from ComfyUI/extra_model_paths.yaml, which main.py reads by
+      # itself. Input and output have no such file, so they're passed here and
+      # have to match what the Desktop app has in its settings.json.
       # exec so the recorded pid is the server rather than the subshell.
+      # shellcheck disable=SC2086
       ( cd "$tree" && exec nohup "$py" main.py \
-          --listen 127.0.0.1 --port "$COMFYUI_PORT_DEFAULT" ) >>"$log" 2>&1 &
+          --listen 127.0.0.1 --port "$COMFYUI_PORT_DEFAULT" \
+          --input-directory "$COMFYUI_INPUT_DEFAULT" \
+          --output-directory "$COMFYUI_OUTPUT_DEFAULT" \
+          $COMFYUI_EXTRA_ARGS_DEFAULT ) >>"$log" 2>&1 &
       track "$svc" $!
       ;;
   esac
@@ -148,6 +172,12 @@ stop_one() {
   local svc=$1 p
   if ! running "$svc"; then
     rm -f "$(pidfile_of "$svc")"
+    # Killing the Desktop app's server out from under it would leave the app
+    # sitting there pointed at nothing, so say who has it and stop.
+    if [ "$svc" = comfyui ] && port_busy "$COMFYUI_PORT_DEFAULT"; then
+      echo "$svc is running under the Desktop app. Quit the app to stop it."
+      return 0
+    fi
     echo "$svc isn't running"
     return 0
   fi
@@ -170,6 +200,10 @@ status_one() {
 
   if running "$svc"; then
     echo "$svc: running (pid $(pid_of "$svc"))"
+  elif [ "$svc" = comfyui ] && port_busy "$COMFYUI_PORT_DEFAULT"; then
+    # Same install, different launcher. Saying "stopped" here would be a lie,
+    # and it's the answer I need before I try to start it myself.
+    echo "$svc: running under the Desktop app, not this script"
   else
     echo "$svc: stopped"
   fi
@@ -181,7 +215,14 @@ status_one() {
     echo "  on disk: missing"
   fi
 
-  if running "$svc"; then
+  if [ "$svc" = comfyui ]; then
+    echo "  input: $COMFYUI_INPUT_DEFAULT"
+    echo "  output: $COMFYUI_OUTPUT_DEFAULT"
+  fi
+
+  # ComfyUI reports whenever the port answers, since the Desktop app's instance
+  # is just as real as one this script started.
+  if running "$svc" || { [ "$svc" = comfyui ] && port_busy "$COMFYUI_PORT_DEFAULT"; }; then
     case "$svc" in
       ollama)
         echo "  api: $(curl -s --max-time 3 "http://$OLLAMA_HOST_DEFAULT/api/version" || echo "not answering")"
