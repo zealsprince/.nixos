@@ -34,6 +34,9 @@ in
     # WM-specific config (Plasma 6)
     ./modules/home/wm/plasma6.nix
 
+    # Dolphin "Convert To" service menus (images, video, audio)
+    ./modules/home/wm/plasma6.convert.nix
+
     # WM-specific config (Hyprland)
     ./modules/home/wm/hyprland.nix
   ];
@@ -188,6 +191,51 @@ in
     };
 
     restartKglobalAccel = true;
+
+    # Right-click "Convert To" in Dolphin. Defaults cover the formats I actually
+    # hit (HEIC off the phone, WebP off the web); trim the lists to shorten the
+    # menu.
+    convert = {
+      enable = true;
+
+      image = {
+        enable = true;
+        quality = 92;
+        formats = [
+          "jpg"
+          "png"
+          "webp"
+          "avif"
+          "heic"
+          "tiff"
+          "pdf"
+        ];
+      };
+
+      video = {
+        enable = true;
+        crf = 20;
+        formats = [
+          "mp4"
+          "mkv"
+          "webm"
+          "gif"
+          "mp3"
+        ];
+      };
+
+      audio = {
+        enable = true;
+        bitrate = "320k";
+        formats = [
+          "mp3"
+          "flac"
+          "wav"
+          "opus"
+          "m4a"
+        ];
+      };
+    };
   };
 
   # Manual Shortcuts (Plasma):
