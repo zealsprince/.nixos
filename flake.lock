@@ -471,11 +471,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787692260,
-        "narHash": "sha256-WiMqZmCsxJRm6w6VJGuzX1q80KkimsP03LSnInX3pS4=",
+        "lastModified": 1787935305,
+        "narHash": "sha256-xcm+wfhO65eKod+mA5WvhMG2lFO7C2JHu5gtr9G5Nv0=",
         "owner": "mio-19",
         "repo": "nurpkgs",
-        "rev": "67dedceb7f895faafacae5a4080584db737572f8",
+        "rev": "46c0a5c68990ea7dda0da3689e05647278c25c78",
         "type": "github"
       },
       "original": {
@@ -549,11 +549,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1787498568,
-        "narHash": "sha256-9i/VTdusq/+NM/tz+J1Re+ojkMB8MBf0QshnYfzHz30=",
+        "lastModified": 1787736819,
+        "narHash": "sha256-cV5xEJJK3BvhU8rEd4mC9UsmDi5qscv/kzGPhBRC5WA=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "56c02bc00adcf003215cc4bd996d6efaf4cff188",
+        "rev": "9fbb54b33e91ee4ca368e35a78e0613c720600b3",
         "type": "github"
       },
       "original": {
@@ -629,11 +629,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1787640266,
-        "narHash": "sha256-MrkfE5hF5xx4L/0h5NyJ3xQkKVftwSuKSkFSrvlTxGY=",
+        "lastModified": 1787848966,
+        "narHash": "sha256-7gDpu5hpq0rOYnYMcOWqSzquK4HA/xU8Xf3CjUBOOJA=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "f4f698677b11021a8f84f452e23ae9ef2427bec3",
+        "rev": "d57af924f160a5084293c71c2043f058bd1cdb60",
         "type": "github"
       },
       "original": {
@@ -651,11 +651,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787695503,
-        "narHash": "sha256-ntoGPUFOI1Kw0/Xar/O7CkWvlvTcIdalzswthfwPz6s=",
+        "lastModified": 1787935434,
+        "narHash": "sha256-suEAKUnuvUCLDSrxmZrZ3pslokJ405UkpJ7E3OD2Q2s=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "b1cb8706be1e94a9c1c37c638873c9878c0ceb0e",
+        "rev": "e02e73c6e88fa0c643769cbe317f0538699158a0",
         "type": "github"
       },
       "original": {
@@ -783,11 +783,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787697179,
-        "narHash": "sha256-GE3IA6DlihcSt3+cn8UduyG7TIkRPTBUHkp5HFnkwJI=",
+        "lastModified": 1787932552,
+        "narHash": "sha256-4zSFyPgeO1QSOyHP/EOWqVP3x8Tbyy1C7GZIAenmzYc=",
         "owner": "zealsprince",
         "repo": "rox",
-        "rev": "c7e56d9ccfa85a7c0480e1c32d6acbe86b5e937a",
+        "rev": "10a0252c6ce5ace0f10ca874c5b020c0539d92d3",
         "type": "github"
       },
       "original": {
