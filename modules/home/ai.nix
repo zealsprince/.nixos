@@ -109,7 +109,7 @@ in
 
     acpPackage = lib.mkOption {
       type = lib.types.str;
-      default = "@agentclientprotocol/claude-agent-acp@0.62.0";
+      default = "@agentclientprotocol/claude-agent-acp@0.73.0";
       description = ''
         npm package (pinned) for the Claude ACP adapter used by the Zed
         agent_servers. The activation step rewrites any older adapter in the
