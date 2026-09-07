@@ -258,7 +258,23 @@ in
         pkgs-unstable.signal-desktop
         pkgs-unstable.element-desktop
         teamspeak3
-        teamspeak6-client
+        # hotkey_helper dlopens libX11/libXi at runtime and the nixpkgs wrapper
+        # leaves them off LD_LIBRARY_PATH, so it segfaults on start and no
+        # hotkey (keyboard or remote app key press) ever fires.
+        (symlinkJoin {
+          name = "teamspeak6-client";
+          paths = [ teamspeak6-client ];
+          nativeBuildInputs = [ makeWrapper ];
+          postBuild = ''
+            wrapProgram $out/bin/TeamSpeak \
+              --prefix LD_LIBRARY_PATH : ${
+                lib.makeLibraryPath [
+                  libx11
+                  libxi
+                ]
+              }
+          '';
+        })
         pkgs-unstable.zoom-us
         pkgs-unstable.teams-for-linux
         slack

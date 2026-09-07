@@ -39,7 +39,12 @@ in
 
     # WM-specific config (Hyprland)
     ./modules/home/wm/hyprland.nix
+
+    # TeamSpeak away status during calendar meetings
+    inputs.teamspeak-ical-autoaway.homeManagerModules.default
   ];
+
+  services.teamspeak-ical-autoaway.enable = true;
 
   # ---------------------------------------------------------------------------
   # Zen Browser

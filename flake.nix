@@ -87,6 +87,13 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 
+    # teamspeak-ical-autoaway: TeamSpeak away status from calendar meetings.
+    # Exposes a Home Manager module, wired up in home.desktop.nix.
+    teamspeak-ical-autoaway = {
+      url = "github:zealsprince/teamspeak-ical-autoaway";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # streamrip dev branch (nixpkgs pins the v2.1.0 tag). Pinned via
     # flake.lock, bump with `nix flake update streamrip-src`.
     streamrip-src = {
@@ -325,7 +332,10 @@
               home-manager.users.zealsprince = {
                 imports = [
                   inputs.agenix.homeManagerModules.default
-                  inputs.nur.modules.homeManager.default
+                  # No NUR home module here: it only sets nixpkgs.overlays, which
+                  # the nixos module above already applies to the global pkgs
+                  # this profile uses, and home-manager is dropping support for
+                  # nixpkgs.* options together with useGlobalPkgs.
                   inputs.nur.legacyPackages.x86_64-linux.repos.charmbracelet.modules.homeManager.crush
                   ./home.desktop.nix
                   ./modules/home/crush.nix
