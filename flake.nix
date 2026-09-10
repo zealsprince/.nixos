@@ -8,10 +8,15 @@
     # Unstable for bleeding-edge packages (e.g. newer Ollama)
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
-    # Pinned 25.11 source, used only to retain the legacy TeamSpeak 3 client,
-    # which was removed from nixpkgs 26.05 (EOL qt5 webengine). See the overlay
-    # in hosts/ANDREW-DREAMREAPER/default.nix.
-    nixpkgs-ts3.url = "github:nixos/nixpkgs/nixos-25.11";
+    # Legacy TeamSpeak 3 client, removed from nixpkgs 26.05 along with the EOL
+    # qt5 webengine. Jokler's flake carries the 25.11 derivation with webengine
+    # swapped for a stub, so it builds against our nixpkgs without pulling in
+    # the insecure qtwebengine. Only the "Browse Online" addons tab goes blank.
+    # Wired up as an overlay in hosts/ANDREW-DREAMREAPER/default.nix.
+    ts3-noweb = {
+      url = "github:Jokler/ts3client-noweb-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     _1password-shell-plugins.url = "github:1Password/shell-plugins";
 

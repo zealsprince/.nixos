@@ -110,31 +110,21 @@ in
     "d /ramdisk 1777 zealsprince users - -"
   ];
 
-  # Workaround: TeamSpeak 3 blocks logout/shutdown via session manager.
-  # We unset SESSION_MANAGER so it doesn't register itself.
-  #
-  # NOTE: The legacy TeamSpeak 3 client was removed from nixpkgs in 26.05
-  # (depended on the EOL qt5 webengine). We pin it from the 25.11 nixpkgs
-  # input (`nixpkgs-ts3`) so we can keep using it. This knowingly pulls in
-  # the insecure qtwebengine-5.15.19 (allowed in modules/nixos/common.nix).
   nixpkgs.overlays = [
     # Affinity v3/v2 packages are unfree upstream and must be consumed through
     # this overlay (direct package consumption is deprecated). The overlay lets
     # them respect this host's `nixpkgs.config.allowUnfree`.
     inputs.affinity-nix.overlays.default
+    # Legacy TeamSpeak 3 client (gone from nixpkgs 26.05) with qtwebengine
+    # stubbed out. See the input comment in flake.nix.
+    inputs.ts3-noweb.overlays.default
     (final: prev: {
-      teamspeak3 =
-        (import inputs.nixpkgs-ts3 {
-          inherit (prev.stdenv.hostPlatform) system;
-          config.allowUnfree = true;
-          config.permittedInsecurePackages = [ "qtwebengine-5.15.19" ];
-        }).teamspeak3.overrideAttrs
-          (old: {
-            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.makeWrapper ];
-            postInstall = (old.postInstall or "") + ''
-              wrapProgram $out/bin/ts3client --unset SESSION_MANAGER
-            '';
-          });
+      # Workaround: TeamSpeak 3 blocks logout/shutdown via session manager.
+      # We unset SESSION_MANAGER so it doesn't register itself. Goes through
+      # qtWrapperArgs so it lands on the same wrapper the package already makes.
+      teamspeak3 = prev.teamspeak3.overrideAttrs (old: {
+        qtWrapperArgs = (old.qtWrapperArgs or [ ]) ++ [ "--unset SESSION_MANAGER" ];
+      });
       zen-browser = inputs.zen-browser.packages.${prev.stdenv.hostPlatform.system}.zen-browser;
     })
   ];

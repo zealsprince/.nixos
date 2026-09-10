@@ -1,9 +1,8 @@
 { lib, ... }:
 
 {
-  # Allow explicitly permitted insecure deps required by some packages (e.g. teamspeak3).
+  # Allow explicitly permitted insecure deps required by some packages.
   nixpkgs.config.permittedInsecurePackages = lib.mkDefault [
-    "qtwebengine-5.15.19"
     "pnpm-10.29.2"
   ];
   # ===========================================================================
