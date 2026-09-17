@@ -15,6 +15,12 @@
   # Networking baseline (hostName belongs in hosts/<name>/default.nix)
   networking.networkmanager.enable = lib.mkDefault true;
 
+  # `plugdev` is the conventional group for non-root device access. Several
+  # unrelated things reference it (FlexBar rules, the Virtuoso hidraw rules,
+  # user extraGroups), so it's declared here rather than owned by whichever
+  # hardware module happens to be enabled.
+  users.groups.plugdev = { };
+
   # Locale / time (can be overridden per-host)
   time.timeZone = lib.mkDefault "America/Edmonton";
 

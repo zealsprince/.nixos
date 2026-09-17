@@ -1,4 +1,4 @@
-{ ... }:
+{ lib, config, ... }:
 
 /*
   FlexBar USB permissions (ENIAC-Tech FlexBar)
@@ -10,28 +10,35 @@
     SUBSYSTEM=="usb",     ATTRS{idVendor}=="303a", ATTRS{idProduct}=="82bf", MODE="0666", GROUP="plugdev"
     SUBSYSTEM=="tty",     ATTRS{idVendor}=="303a", ATTRS{idProduct}=="82bf", MODE="0666", GROUP="plugdev"
 
-  This module implements that in a NixOS-native way, plus ensures the `plugdev`
-  group exists.
+  This module implements that in a NixOS-native way.
 
-  Usage (import this module from a host that needs it):
-    imports = [
-      ../../modules/nixos/hardware/flexbar.nix
-    ];
+  The `plugdev` group itself is declared in modules/nixos/common.nix, since the
+  Virtuoso rules and my user account both depend on it independently of whether
+  the FlexBar is enabled here.
 
-  Then add your user to the `plugdev` group on that host:
+  Usage:
+    my.hardware.flexbar.enable = true;
+
+  Then add the user to the `plugdev` group on that host:
     users.users.<name>.extraGroups = [ "plugdev" ... ];
 */
 
+let
+  cfg = config.my.hardware.flexbar;
+in
 {
-  # Ensure the group mentioned by the upstream udev rules exists.
-  users.groups.plugdev = { };
+  options.my.hardware.flexbar = {
+    enable = lib.mkEnableOption "FlexBar (ENIAC-Tech) USB permissions";
+  };
 
-  services.udev.extraRules = ''
-    # FlexBar (ENIAC-Tech) — allow non-root access via plugdev group
-    SUBSYSTEM=="usb",    ATTRS{idVendor}=="303a", ATTRS{idProduct}=="82bd", MODE="0666", GROUP="plugdev"
-    SUBSYSTEM=="hidraw", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="82bd", MODE="0666", GROUP="plugdev"
+  config = lib.mkIf cfg.enable {
+    services.udev.extraRules = ''
+      # FlexBar (ENIAC-Tech): allow non-root access via plugdev group
+      SUBSYSTEM=="usb",    ATTRS{idVendor}=="303a", ATTRS{idProduct}=="82bd", MODE="0666", GROUP="plugdev"
+      SUBSYSTEM=="hidraw", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="82bd", MODE="0666", GROUP="plugdev"
 
-    SUBSYSTEM=="usb",    ATTRS{idVendor}=="303a", ATTRS{idProduct}=="82bf", MODE="0666", GROUP="plugdev"
-    SUBSYSTEM=="tty",    ATTRS{idVendor}=="303a", ATTRS{idProduct}=="82bf", MODE="0666", GROUP="plugdev"
-  '';
+      SUBSYSTEM=="usb",    ATTRS{idVendor}=="303a", ATTRS{idProduct}=="82bf", MODE="0666", GROUP="plugdev"
+      SUBSYSTEM=="tty",    ATTRS{idVendor}=="303a", ATTRS{idProduct}=="82bf", MODE="0666", GROUP="plugdev"
+    '';
+  };
 }

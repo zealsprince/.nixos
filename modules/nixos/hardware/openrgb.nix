@@ -6,10 +6,12 @@
 }:
 
 let
-  cfg = config.hardware.openrgb;
+  cfg = config.my.hardware.openrgb;
 in
 {
-  options.hardware.openrgb = {
+  options.my.hardware.openrgb = {
+    enable = lib.mkEnableOption "OpenRGB SMBus/I2C access and device udev rules";
+
     motherboard = lib.mkOption {
       type = lib.types.enum [
         "amd"
@@ -21,7 +23,7 @@ in
     };
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
     # Load necessary kernel modules for SMBus/I2C access
     boot.kernelModules = [
       "i2c-dev"

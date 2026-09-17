@@ -70,9 +70,10 @@ in
     ../../modules/nixos/security/howdy.nix
     ../../modules/nixos/services.nix
 
-    # Hardware permissions (FlexBar USB access)
+    # Hardware support modules (all gated behind `my.hardware.*` below)
     ../../modules/nixos/hardware/flexbar.nix
     ../../modules/nixos/hardware/openrgb.nix
+    ../../modules/nixos/hardware/firewire-dv.nix
 
     # Desktop package sets:
     # - `desktop.nix` is DE-agnostic GUI apps (safe for Hyprland, etc.)
@@ -188,6 +189,20 @@ in
 
   # iPhone USB support: file access in Dolphin (afc://) and idevice* tools.
   my.services.idevice.enable = true;
+
+  # Hardware modules (modules/nixos/hardware/)
+
+  # FlexBar macro pad: udev permissions for FlexDesigner.
+  my.hardware.flexbar.enable = true;
+
+  # OpenRGB: AMD SMBus driver support on this board.
+  my.hardware.openrgb = {
+    enable = true;
+    motherboard = "amd";
+  };
+
+  # MiniDV tape capture off the Sony DCR-HC20 over the PCIe FireWire card.
+  my.hardware.firewireDv.enable = true;
 
   my.desktop.plasma6 = {
     enable = true;
@@ -312,9 +327,9 @@ in
         fsType = "exfat";
       };
 
-      Footage = {
-        device = "/dev/disk/by-label/Footage";
-        mountPoint = "/mnt/Footage";
+      Media = {
+        device = "/dev/disk/by-label/Media";
+        mountPoint = "/mnt/Media";
         fsType = "xfs";
       };
 
@@ -342,9 +357,6 @@ in
 
   # Enable GPU Screen Recorder. You'll probably want to include the GTK package as well in your desktop packages.
   programs.gpu-screen-recorder.enable = true;
-
-  # OpenRGB: enable AMD SMBus driver support for this host
-  hardware.openrgb.motherboard = "amd";
 
   hardware.graphics = {
     enable = true;
