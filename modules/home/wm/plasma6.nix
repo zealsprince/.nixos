@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  pkgs-unstable,
   lib,
   ...
 }:
@@ -653,7 +654,7 @@ in
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.mullvadVpn.enable) {
         ".config/autostart/mullvad-vpn.desktop".text = mkAutostartDesktopTray {
           name = "Mullvad VPN";
-          exec = "${pkgs.mullvad-vpn}/bin/mullvad-vpn";
+          exec = "${pkgs-unstable.mullvad-vpn}/bin/mullvad-vpn";
         };
       })
 
