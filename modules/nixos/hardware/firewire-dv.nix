@@ -14,6 +14,14 @@ in
     # play if /dev/fw* ever fails to show up.
     boot.kernelModules = [ "firewire-ohci" ];
 
+    # With a LUKS root, nixpkgs blacklists firewire_core/ohci/sbp2 by default
+    # to block DMA attacks on the unlock passphrase over a 1394 port. That
+    # blacklist wins over kernelModules and PCI autoload, so the card sits
+    # there unbound and /dev/fw* never appears. Turning it off is the only way
+    # to use the card at all. The IOMMU is on for this host, which covers the
+    # DMA angle anyway.
+    boot.initrd.luks.mitigateDMAAttacks = false;
+
     # The kernel hands out /dev/fw* as root:root 0600. dvgrab opens the
     # controller node to walk the bus and then the camcorder's own node, so
     # both need to be reachable without sudo.
