@@ -199,6 +199,27 @@ in
 
   home.file.".tmux.conf".source = inputs.dotfiles + "/tmux/.tmux.conf";
 
+  # tmux plugins come from nixpkgs rather than TPM cloning them at runtime.
+  # The conf sources this file when it exists and falls back to the TPM run
+  # line otherwise, so the dotfiles repo stays usable on non-Nix machines.
+  #
+  # Adding a plugin here means adding the matching `set -g @plugin` line in
+  # the dotfiles conf too, so both paths stay in sync.
+  home.file.".tmux/nix-plugins.conf".text =
+    let
+      plugins = with pkgs.tmuxPlugins; [
+        sensible
+        resurrect
+        pain-control
+        prefix-highlight
+        sidebar
+        battery
+        cpu
+        net-speed
+      ];
+    in
+    lib.concatMapStringsSep "\n" (p: "run-shell ${p.rtp}") plugins + "\n";
+
   home.file.".vimrc".source = inputs.dotfiles + "/vim/.vimrc";
 
   # Ensure Vim can find custom colorschemes via :colorscheme
