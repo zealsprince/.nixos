@@ -10,18 +10,25 @@ let
 
   cfg = config.my.storage.autoMounts;
 
-  # Build systemd mount option strings for a given mount point.
-  # We use systemd.automount so the drives don't block boot and will mount on first access.
-  mkSystemdUnitOptions = mountPoint: [
-    "x-systemd.automount"
-    "x-systemd.idle-timeout=${toString cfg.idleTimeoutSec}s"
-    "x-systemd.device-timeout=${toString cfg.deviceTimeoutSec}s"
-    "x-systemd.mount-timeout=${toString cfg.mountTimeoutSec}s"
-    "x-systemd.wanted-by=multi-user.target"
-    "nofail"
-  ] ++ lib.optionals cfg.allowUserMount [
-    "user"
-  ];
+  # Build systemd mount option strings for a mount definition.
+  #
+  # Automount is opt-in per mount. The automount unit leaves an autofs entry in
+  # the mount table that sticks around as a parent even once the real filesystem
+  # mounts underneath it, and KIO's trash worker rejects any path whose mount
+  # entry is autofs. That means no desktop recycling bin on the drive. Fixed
+  # internal disks should mount at boot instead.
+  mkSystemdUnitOptions = m:
+    lib.optionals m.automount [
+      "x-systemd.automount"
+      "x-systemd.idle-timeout=${toString cfg.idleTimeoutSec}s"
+    ]
+    ++ [
+      "x-systemd.device-timeout=${toString cfg.deviceTimeoutSec}s"
+      "x-systemd.mount-timeout=${toString cfg.mountTimeoutSec}s"
+      "x-systemd.wanted-by=multi-user.target"
+      "nofail"
+    ]
+    ++ lib.optionals cfg.allowUserMount [ "user" ];
 
   mkAutoFileSystem = name: m:
     let
@@ -45,7 +52,7 @@ let
         ]
         ++ lib.optionals (fsType == "ntfs3" || fsType == "ntfs") [ "windows_names" ]
         ++ lib.optionals (m.readOnly) [ "ro" ]
-        ++ mkSystemdUnitOptions mountPoint
+        ++ mkSystemdUnitOptions m
         ++ m.extraOptions;
     in
     {
@@ -106,6 +113,18 @@ in
             description = "Mount filesystem read-only.";
           };
 
+          automount = mkOption {
+            type = types.bool;
+            default = true;
+            description = ''
+              Mount on first access via systemd automount rather than at boot.
+
+              Turn this off for anything that needs a desktop recycling bin.
+              KIO won't create .Trash-1000 under the autofs entry that the
+              automount unit leaves in the mount table.
+            '';
+          };
+
           extraOptions = mkOption {
             type = types.listOf types.str;
             default = [ ];
@@ -162,7 +181,7 @@ in
     idleTimeoutSec = mkOption {
       type = types.int;
       default = 300;
-      description = "Seconds of inactivity before systemd auto-unmounts the filesystem.";
+      description = "Seconds of inactivity before systemd auto-unmounts the filesystem. Only applies to mounts with automount enabled.";
     };
 
     deviceTimeoutSec = mkOption {

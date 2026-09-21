@@ -190,6 +190,12 @@ in
   # iPhone USB support: file access in Dolphin (afc://) and idevice* tools.
   my.services.idevice.enable = true;
 
+  # Flatpak: rox ships a bundle, and once it's on Flathub releases publish
+  # without me in the loop. Installed here so I can run the Flatpak the way a
+  # user gets it and catch sandbox regressions (tray, MPRIS, portals) that no
+  # other channel would show.
+  my.services.flatpak.enable = true;
+
   # Hardware modules (modules/nixos/hardware/)
 
   # FlexBar macro pad: udev permissions for FlexDesigner.
@@ -299,7 +305,7 @@ in
   # ===========================================================================
   # Storage (host-specific automounts)
   # ===========================================================================
-  # These mount on first access (systemd automount) and won't block boot.
+  # These mount at boot with nofail, so a missing or slow drive can't block it.
   # Device paths here use stable /dev/disk/by-uuid identifiers.
   my.storage.autoMounts = {
     enable = true;
@@ -314,29 +320,37 @@ in
     mountTimeoutSec = 30;
     idleTimeoutSec = 300;
 
+    # All fixed internal disks, so automount stays off. Mounting at boot keeps
+    # autofs out of the mount table, which is what KDE needs before it will put
+    # a recycling bin on a drive. It also means they stay mounted rather than
+    # dropping out after idleTimeoutSec.
     mounts = {
       Strike = {
         device = "/dev/disk/by-label/Strike";
         mountPoint = "/mnt/Strike";
         fsType = "ext4";
+        automount = false;
       };
 
       Storage = {
         device = "/dev/disk/by-label/Storage";
         mountPoint = "/mnt/Storage";
         fsType = "exfat";
+        automount = false;
       };
 
       Media = {
         device = "/dev/disk/by-label/Media";
         mountPoint = "/mnt/Media";
         fsType = "xfs";
+        automount = false;
       };
 
       Zeal = {
         device = "/dev/disk/by-label/Zeal";
         mountPoint = "/mnt/Zeal";
         fsType = "exfat";
+        automount = false;
       };
     };
   };

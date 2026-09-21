@@ -19,5 +19,6 @@
     ./services/ollama.nix
     ./services/virtuoso-sidetone.nix
     ./services/samba.nix
+    ./services/flatpak.nix
   ];
 }

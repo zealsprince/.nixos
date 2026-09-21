@@ -373,7 +373,11 @@ in
         type = lib.types.listOf lib.types.str;
         default = [
           "teams-for-linux"
+          # Mullvad reports "Mullvad VPN" under XWayland but "mullvad-vpn" as its
+          # native Wayland app_id, which is what the nixpkgs electron wrapper gets
+          # us now. Keep both so the close still lands either way.
           "mullvad vpn"
+          "mullvad-vpn"
           "slack"
           "qpwgraph"
           "Ferdium"
