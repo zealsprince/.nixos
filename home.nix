@@ -39,6 +39,22 @@ let
     '';
   };
 
+  # tmux-named-snapshot isn't packaged in nixpkgs, so build it the same way
+  # nixpkgs builds its own tmuxPlugins entries (mkTmuxPlugin), pinned to a
+  # commit. It's a tmux-resurrect extension, so it needs `resurrect` loaded
+  # first in the plugin list below.
+  namedSnapshotPlugin = pkgs.tmuxPlugins.mkTmuxPlugin {
+    pluginName = "named-snapshot";
+    version = "unstable-2026-09-18";
+    rtpFilePath = "named-snapshot.tmux";
+    src = pkgs.fetchFromGitHub {
+      owner = "spywhere";
+      repo = "tmux-named-snapshot";
+      rev = "47615c4984ed79daab947e6d85a192c8d3b113e7";
+      hash = "sha256-UQNsub8id0DlmCNERbfpJ4q6i/QX7CrYjypTfiOlKfM=";
+    };
+  };
+
   # Runtime locations where Home Manager agenix materializes secrets.
   # Prefer referencing the declared secret paths so this works across machines/users.
   crushOpenaiKeyFile = config.age.secrets."crush-openai-api-key".path;
@@ -210,6 +226,7 @@ in
       plugins = with pkgs.tmuxPlugins; [
         sensible
         resurrect
+        namedSnapshotPlugin
         pain-control
         prefix-highlight
         sidebar
