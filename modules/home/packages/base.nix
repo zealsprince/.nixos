@@ -24,6 +24,9 @@ let
   # Repo-local custom package (Bitbucket Cloud CLI, gh-like). See pkgs/bkt.
   bkt = pkgs.callPackage ../../../pkgs/bkt { };
 
+  # Repo-local custom package (Floci local cloud emulator CLI). See pkgs/floci.
+  floci = pkgs.callPackage ../../../pkgs/floci { };
+
   # Repo-local custom package (Bandcamp downloader from PyPI). See pkgs/campdown.
   campdown = pkgs.callPackage ../../../pkgs/campdown { };
 
@@ -98,6 +101,7 @@ let
       # Cloud CLIs
       awscli2
       terraform
+      floci
 
       # Languages that come with global packages
       nodejsPkg
