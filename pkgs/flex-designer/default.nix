@@ -41,11 +41,18 @@ let
             'return mergeControllerAmdSysfs(mergeControllerNvidia(controller, nvidiaData.find((contr) => contr.pciBus.toLowerCase().endsWith(controller.busAddress.toLowerCase())) || {}));'
         cat ${./amd-gpu-sysfs.js} >> app/node_modules/systeminformation/lib/graphics.js
 
+        # asar extract drops the exec bit, so copy it back from upstream's
+        # unpacked tree. Without it the bundled binaries fail with exit 126.
+        (cd ${extracted}/resources/app.asar.unpacked && find . -type f -perm -u+x) \
+          | while IFS= read -r f; do chmod +x "app/$f"; done
+
         rm -rf $out/resources/app.asar $out/resources/app.asar.unpacked
-        # Keep the same set of unpacked modules as the upstream asar (native
-        # binaries cannot be loaded from inside the archive).
+        # Keep the same set of unpacked paths as the upstream asar (native
+        # binaries cannot be loaded from inside the archive). resources/ holds
+        # the bundled Python service binary; without it the service exits 127
+        # and respawns every two seconds.
         asar pack app $out/resources/app.asar \
-          --unpack-dir "node_modules/{@img,active-win,axios,electron-color-picker,follow-redirects,form-data,node-hid,proxy-from-env,sharp}"
+          --unpack-dir "{resources,node_modules/{@img,active-win,axios,electron-color-picker,follow-redirects,form-data,node-hid,proxy-from-env,sharp}}"
       '';
 
   # On startup the app checks that /etc/udev/rules.d/99-flexbar.rules exists

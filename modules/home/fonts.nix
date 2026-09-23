@@ -53,6 +53,11 @@ in
       cfg.packages
       ++ lib.optionals cfg.cjkFallback [
         pkgs.noto-fonts-cjk-sans
+        # The variable sans above lists at weight 100 (its Thin default), and
+        # cosmic-text's fallback only takes an exact weight match, so gpui apps
+        # like rox skip it, walk every installed face per word and land on
+        # Unifont. The static set carries a real Regular and Bold.
+        pkgs.noto-fonts-cjk-sans-static
         pkgs.noto-fonts-cjk-serif
       ]
       ++ lib.optionals cfg.enableAllNerdFonts [
