@@ -53,6 +53,26 @@ let
     chmod u+w $out/lib/libbz2-debian.so.1.0
     patchelf --set-soname libbz2.so.1.0 $out/lib/libbz2-debian.so.1.0
   '';
+
+  # Ubuntu target builds package the game as an AppImage. Igor runs
+  # `linuxdeploy --appimage-extract`, then runs the extracted linuxdeploy
+  # chrooted into the Steam Runtime sysroot, then appimagetool with
+  # --appimage-extract-and-run. Both have to be the raw upstream AppImages,
+  # since those flags are handled by the AppImage runtime itself.
+  linuxdeploy = fetchurl {
+    url = "https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-x86_64.AppImage";
+    hash = "sha256-wgzXHjpOO4DDSDzveTzaP06ZCsoUAU0jxUTKPOEnC00=";
+  };
+
+  appimagetool = fetchurl {
+    url = "https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage";
+    hash = "sha256-7UzoTw2cr/ZvULzKb/bzWq5UzoE1QIs/ozq/w8s4TrA=";
+  };
+
+  appimageBuildTools = runCommand "gamemaker-appimage-tools" { } ''
+    install -Dm755 ${linuxdeploy} $out/bin/linuxdeploy
+    install -Dm755 ${appimagetool} $out/bin/appimagetool
+  '';
 in
 buildFHSEnv {
   inherit pname version;
@@ -107,6 +127,18 @@ buildFHSEnv {
       # Bundled instrumentation engine (code coverage). Links libxml2.so.2,
       # which current libxml2 no longer provides.
       libxml2_13
+
+      # Ubuntu target builds. The sysroot itself comes from the host at
+      # /opt/steam-runtime (see modules/nixos/packages/custom.nix).
+      appimageBuildTools
+      rsync
+
+      # linuxdeploy's excludelist keeps these out of the game AppImage and
+      # expects the host to have them, so games run from the IDE need them here.
+      e2fsprogs
+      gmp
+      libgpg-error
+      libxcb
     ];
 
   runScript = "${unpacked}/opt/GameMaker-Beta/GameMaker";

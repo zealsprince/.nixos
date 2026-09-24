@@ -19,6 +19,7 @@ let
   flex-designer = pkgs.callPackage ../../../pkgs/flex-designer { };
   gamemaker-beta = pkgs.callPackage ../../../pkgs/gamemaker-beta { };
   invoke-ai = pkgs.callPackage ../../../pkgs/invoke-ai { };
+  steam-runtime-scout-sdk = pkgs.callPackage ../../../pkgs/steam-runtime-scout-sdk { };
 in
 {
   environment.systemPackages = [
@@ -35,5 +36,11 @@ in
     pkgs.python3Packages.pyaudio
     pkgs.xdotool
     pkgs.vips
+  ];
+
+  # GameMaker's Ubuntu target builds chroot into a Steam Runtime SDK sysroot at
+  # its default steamrt_sdk_dir. L+ so a version bump repoints the link.
+  systemd.tmpfiles.rules = [
+    "L+ /opt/steam-runtime - - - - ${steam-runtime-scout-sdk}"
   ];
 }
