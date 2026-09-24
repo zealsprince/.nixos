@@ -17,12 +17,14 @@
 let
   campdown = pkgs.callPackage ../../../pkgs/campdown { };
   flex-designer = pkgs.callPackage ../../../pkgs/flex-designer { };
+  gamemaker-beta = pkgs.callPackage ../../../pkgs/gamemaker-beta { };
   invoke-ai = pkgs.callPackage ../../../pkgs/invoke-ai { };
 in
 {
   environment.systemPackages = [
     campdown
     flex-designer
+    gamemaker-beta
     invoke-ai
 
     # FlexDesigner runtime deps (per upstream "apt-get install ..."):
