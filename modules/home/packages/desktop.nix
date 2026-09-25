@@ -49,6 +49,21 @@ let
     disabledTests = (old.disabledTests or [ ]) ++ [ "test_album_metadata_qobuz" ];
   });
 
+  # Krita 6.0.2.1 plus the upstream Qt 6.11 font family dropdown fix (KDE bug
+  # 520971, shipped in 6.0.4). Unstable's 6.0.4 can't be used instead: its
+  # KIO 6.30 loses to the KIO 6.26 the Plasma platform theme pulls in, so
+  # kio_file fails to load and saving hangs. Drop once 26.05 carries 6.0.4.
+  krita = pkgs.krita.override {
+    krita-unwrapped = pkgs.krita-unwrapped.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [
+        (pkgs.fetchpatch {
+          url = "https://invent.kde.org/graphics/krita/-/commit/986ae3c0b295e72003d2000fa74f288d1c5d6a28.patch";
+          hash = "sha256-rkrfvJ/th84BVSaHmz14PMx3JyiBnV4gcXq9mE5dS44=";
+        })
+      ];
+    });
+  };
+
   # PhotoGIMP as a second launcher next to stock GIMP: same gimp binary,
   # but GIMP3_DIRECTORY points it at its own config dir so the Photoshop
   # layout and stock GIMP settings never touch each other. The config is
