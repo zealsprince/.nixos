@@ -7,6 +7,8 @@
   runCommand,
   patchelf,
   bzip2,
+  curl,
+  dotnetCorePackages,
 }:
 
 let
@@ -53,6 +55,29 @@ let
     chmod u+w $out/lib/libbz2-debian.so.1.0
     patchelf --set-soname libbz2.so.1.0 $out/lib/libbz2-debian.so.1.0
   '';
+
+  # GMRT's native tools (AssetCompiler, gmir2llvm, gmrt_generic) link Debian's
+  # libcurl-gnutls.so.4 and require its CURL_GNUTLS_3 symbol version. The TLS
+  # backend doesn't change the libcurl API, so build the regular curl with that
+  # version name and hand it over under Debian's soname.
+  curlGnutlsCompat =
+    let
+      curl' = curl.overrideAttrs (old: {
+        postPatch = (old.postPatch or "") + ''
+          substituteInPlace lib/libcurl.vers.in \
+            --replace-fail '@CURL_LIBCURL_VERSIONED_SYMBOLS_SONAME@' '3'
+        '';
+        configureFlags = (old.configureFlags or [ ]) ++ [ "--enable-versioned-symbols=GNUTLS_" ];
+        doCheck = false;
+        doInstallCheck = false;
+      });
+    in
+    runCommand "curl-gnutls-soname" { nativeBuildInputs = [ patchelf ]; } ''
+      mkdir -p $out/lib
+      cp ${lib.getLib curl'}/lib/libcurl.so.4.* $out/lib/libcurl-gnutls.so.4
+      chmod u+w $out/lib/libcurl-gnutls.so.4
+      patchelf --set-soname libcurl-gnutls.so.4 $out/lib/libcurl-gnutls.so.4
+    '';
 
   # Ubuntu target builds package the game as an AppImage. Igor runs
   # `linuxdeploy --appimage-extract`, then runs the extracted linuxdeploy
@@ -133,15 +158,39 @@ buildFHSEnv {
       appimageBuildTools
       rsync
 
+      # GMRT toolchain natives (AssetCompiler, gmir2llvm, bundled gensquashfs).
+      curlGnutlsCompat
+      libselinux
+
       # linuxdeploy's excludelist keeps these out of the game AppImage and
       # expects the host to have them, so games run from the IDE need them here.
       e2fsprogs
       gmp
       libgpg-error
       libxcb
+
+      # GMRT game AppImages bundle everything but SDL2.
+      SDL2
     ];
 
   runScript = "${unpacked}/opt/GameMaker-Beta/GameMaker";
+
+  # The IDE is self-contained, but the GMRT toolchain it downloads (gmrt, gmc,
+  # csc, ...) is framework-dependent on .NET 8 and doesn't roll forward to a
+  # newer major. Pin it here so a global DOTNET_ROOT pointing elsewhere doesn't
+  # leak in.
+  #
+  # GMRT's Run job executes the game AppImage directly, and fusermount can't
+  # work inside the sandbox, so have the AppImage runtime extract instead.
+  #
+  # GMRT games hand Dawn an X11 surface no matter what SDL picked. nixpkgs'
+  # SDL2 is sdl2-compat, which prefers Wayland, and the game then segfaults in
+  # XGetWindowAttributes. Ubuntu's SDL2 defaults to X11, so match that.
+  profile = ''
+    export DOTNET_ROOT=${dotnetCorePackages.runtime_8_0}/share/dotnet
+    export APPIMAGE_EXTRACT_AND_RUN=1
+    export SDL_VIDEODRIVER=x11
+  '';
 
   extraInstallCommands = ''
     install -Dm444 ${unpacked}/opt/GameMaker-Beta/GameMaker.png \
