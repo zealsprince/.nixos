@@ -127,6 +127,9 @@ in
         qtWrapperArgs = (old.qtWrapperArgs or [ ]) ++ [ "--unset SESSION_MANAGER" ];
       });
       zen-browser = inputs.zen-browser.packages.${prev.stdenv.hostPlatform.system}.zen-browser;
+
+      # Broken on the current 26.05 rev. See the nixpkgs-msitools input.
+      msitools = inputs.nixpkgs-msitools.legacyPackages.${prev.stdenv.hostPlatform.system}.msitools;
     })
   ];
 

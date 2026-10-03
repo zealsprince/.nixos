@@ -8,6 +8,13 @@
     # Unstable for bleeding-edge packages (e.g. newer Ollama)
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # Last 26.05 rev with a working msitools. At 774debe (2026-10-02) its
+    # msibuild tests fail on Hydra too, likely from the libgsf 1.14.59 bump,
+    # and affinity-nix needs it to unpack the installer. Overlaid for msitools
+    # only in hosts/ANDREW-DREAMREAPER/default.nix. Drop both once
+    # nixpkgs.msitools.x86_64-linux is green on hydra's nixos/release-26.05.
+    nixpkgs-msitools.url = "github:nixos/nixpkgs/c508844df6c28fa6dabc1b6af70f3ccbd65c5201";
+
     # Legacy TeamSpeak 3 client, removed from nixpkgs 26.05 along with the EOL
     # qt5 webengine. Jokler's flake carries the 25.11 derivation with webengine
     # swapped for a stub, so it builds against our nixpkgs without pulling in
