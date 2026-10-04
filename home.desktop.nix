@@ -151,10 +151,12 @@ in
       # per session, no way around that until Deskflow 1.27 + newer Plasma).
       deskflow.enable = true;
 
-      # FlexDesigner: start silently and keep it in the tray (best-effort)
+      # FlexDesigner: start silently and keep it in the tray (best-effort).
+      # In CDC mode, connecting right at login drops the serial link 12-14s in
+      # and it never retries. A later launch holds, hence the long delay.
       flexDesigner = {
-        enable = false;
-        delaySeconds = 2;
+        enable = true;
+        delaySeconds = 30;
       };
     };
 

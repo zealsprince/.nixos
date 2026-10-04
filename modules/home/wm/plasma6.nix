@@ -636,7 +636,7 @@ in
       (lib.mkIf (cfg.autostart.enable && cfg.autostart.flexDesigner.enable) {
         ".config/autostart/flex-designer.desktop".text = mkAutostartDesktopHidden {
           name = "FlexDesigner (Tray)";
-          exec = "sleep ${toString cfg.autostart.flexDesigner.delaySeconds}; flex-designer";
+          exec = "sleep ${toString cfg.autostart.flexDesigner.delaySeconds}; flex-designer --silent --start-minimized";
           startupNotify = false;
         };
       })
