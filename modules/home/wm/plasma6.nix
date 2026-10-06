@@ -126,6 +126,91 @@ let
       StartupNotify=${if startupNotify then "true" else "false"}
     '';
 
+  # FlexDesigner sometimes loses its serial link to the Flexbar (mostly right
+  # after login) and never retries while the device stays on the bus. A
+  # relaunch restores it, so watch the app's log and do that automatically.
+  flexDesignerWatchdog = pkgs.writeShellScript "flex-designer-watchdog" ''
+    set -u
+    PATH=${
+      lib.makeBinPath [
+        pkgs.coreutils
+        pkgs.findutils
+        pkgs.gnugrep
+        pkgs.procps
+        pkgs.systemd
+      ]
+    }
+
+    logs="$HOME/.config/FlexDesigner/logs"
+    # The app plus its bundled Python service, which a SIGKILL would orphan.
+    app='-patched/(flex-designer( |$)|resources/app\.asar\.unpacked/resources/bin/)'
+    max_restarts=3
+    restarts=0
+    last_restart=0
+
+    flexbar_present() {
+      for d in /sys/bus/usb/devices/*; do
+        [ "$(cat "$d/idVendor" 2>/dev/null)" = 303a ] || continue
+
+        case "$(cat "$d/idProduct" 2>/dev/null)" in
+          82bd | 82bf) return 0 ;;
+        esac
+      done
+
+      return 1
+    }
+
+    while sleep 15; do
+      # Leave it alone when it isn't running, e.g. quit on purpose.
+      pgrep -f -- "$app" >/dev/null || continue
+
+      # Last link event of the current app session. Logs are named by date,
+      # and reading the two newest covers a disconnect just before midnight.
+      last="$(printf '%s\n' "$logs"/*.log | tail -n 2 | xargs -r cat 2>/dev/null |
+        grep -E 'Argv: |Connecting (CDC|HID) device|Device disconnected \(' | tail -n 1)"
+      at="$(date -d "''${last:0:23}" +%s 2>/dev/null)" || continue
+      now="$(date +%s)"
+      age=$((now - at))
+
+      case "$last" in
+        *"Device disconnected ("*) ;;
+        *)
+          # A link that holds for two minutes counts as recovered.
+          [ "$age" -lt 120 ] || restarts=0
+          continue
+          ;;
+      esac
+
+      # A real unplug or firmware reboot takes the device off the bus, and
+      # FlexDesigner reconnects to those itself once it's back.
+      [ "$age" -ge 20 ] || continue
+      flexbar_present || continue
+
+      [ $((now - last_restart)) -ge 120 ] || continue
+
+      if [ "$restarts" -ge "$max_restarts" ]; then
+        [ "$restarts" -gt "$max_restarts" ] ||
+          echo "giving up after $max_restarts relaunches, replug the Flexbar"
+        restarts=$((max_restarts + 1))
+        continue
+      fi
+
+      restarts=$((restarts + 1))
+      last_restart="$now"
+      echo "link down since ''${last:0:19}, relaunching FlexDesigner ($restarts/$max_restarts)"
+
+      pkill -f -- "$app"
+      for _ in $(seq 20); do
+        pgrep -f -- "$app" >/dev/null || break
+        sleep 0.5
+      done
+      pkill -KILL -f -- "$app" || true
+
+      systemd-run --user --collect --quiet -- \
+        /run/current-system/sw/bin/flex-designer --silent --start-minimized
+    done
+  '';
+
   # Run in the background, don't inherit startup activation, and hide from UI lists.
   #
   # Note: This does not guarantee an app is minimized; it only launches it in a way
@@ -693,6 +778,24 @@ in
     # -------------------------------------------------------------------------
     # Activation: write KDE config + global shortcuts
     # -------------------------------------------------------------------------
+    systemd.user.services.flexDesignerWatchdog =
+      lib.mkIf (cfg.autostart.enable && cfg.autostart.flexDesigner.enable)
+        {
+          Unit = {
+            Description = "Relaunch FlexDesigner when it loses the Flexbar";
+            After = [ "graphical-session.target" ];
+            PartOf = [ "graphical-session.target" ];
+          };
+          Service = {
+            Type = "simple";
+            ExecStart = "${flexDesignerWatchdog}";
+            Restart = "on-failure";
+          };
+          Install = {
+            WantedBy = [ "graphical-session.target" ];
+          };
+        };
+
     # -------------------------------------------------------------------------
     # Wayland-safe post-login minimizer for apps that insist on showing a window
     # during autostart (Electron/Qt apps commonly do this on Plasma Wayland).
