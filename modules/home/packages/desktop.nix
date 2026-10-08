@@ -10,6 +10,22 @@
 let
   spotiflac = pkgs.callPackage ../../../pkgs/spotiflac/default.nix { };
 
+  # ArtCraft's Crafting Apps. ArtCraft itself ships no Linux build.
+  craft-apps = map (app: pkgs.callPackage ../../../pkgs/craft-apps { inherit app; }) [
+    "cadcraft"
+    "deckcraft"
+    "designcraft"
+    "effectcraft"
+    "filmcraft"
+    "gridcraft"
+    "lightcraft"
+    "pdfcraft"
+    "photocraft"
+    "soundcraft"
+    "vectorcraft"
+    "wordcraft"
+  ];
+
   # rox ships its icon as `Icon=rox`, but "rox" is also the ROX-Filer file
   # manager, and icon theme sets (BeautySolar, Tela, etc.) alias that name to
   # a file-manager glyph. The active theme wins over hicolor, so KDE draws the
@@ -309,6 +325,7 @@ in
         mangohud
         osu-lazer-bin
       ])
+      ++ craft-apps
       ++ cfg.packages;
 
     # VSCode: the editor is installed as a package above (pkgs-unstable.vscode)
