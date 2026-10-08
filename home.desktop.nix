@@ -199,6 +199,9 @@ in
 
     restartKglobalAccel = true;
 
+    # Dolphin and KRunner only need file names. Content indexing grew to 5G.
+    baloo.filenamesOnly = true;
+
     # Right-click "Convert To" in Dolphin. Defaults cover the formats I actually
     # hit (HEIC off the phone, WebP off the web); trim the lists to shorten the
     # menu.

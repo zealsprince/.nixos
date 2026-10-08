@@ -616,6 +616,14 @@ in
         description = "Spectacle screen-recording save directory (written to spectaclerc). Null leaves it unmanaged.";
       };
     };
+
+    baloo = {
+      filenamesOnly = lib.mkOption {
+        type = lib.types.nullOr lib.types.bool;
+        default = null;
+        description = "Index file names only and skip file contents (baloofilerc 'only basic indexing'). Null leaves it unmanaged.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -841,6 +849,13 @@ in
       ''}
       ${lib.optionalString (cfg.spectacle.videoSaveLocation != null) ''
         ${kwriteconfig} --file spectaclerc --group VideoSave --key videoSaveLocation "file://${cfg.spectacle.videoSaveLocation}"
+      ''}
+
+      # ---- Baloo ----
+      # Flipping this doesn't drop content already in the index. Run
+      # `balooctl6 purge` once afterwards to rebuild it at the new size.
+      ${lib.optionalString (cfg.baloo.filenamesOnly != null) ''
+        ${kwriteconfig} --file baloofilerc --group General --key "only basic indexing" ${lib.boolToString cfg.baloo.filenamesOnly}
       ''}
 
       ${lib.optionalString cfg.shortcuts.enable ''

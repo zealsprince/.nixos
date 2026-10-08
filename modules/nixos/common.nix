@@ -73,6 +73,10 @@
     options = "--delete-older-than 7d";
   };
 
+  # /tmp lives on the root disk, not tmpfs, so wipe it at boot or it grows
+  # forever. Scratch that should outlive a reboot doesn't belong there.
+  boot.tmp.cleanOnBoot = lib.mkDefault true;
+
   # Shell baseline
   #
   # Avoid setting `users.defaultUserShell` globally here because NixOS defines a
