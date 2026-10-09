@@ -104,6 +104,10 @@ in
 
     services.desktopManager.plasma6.enable = true;
 
+    # Plasma turns geoclue on but, unlike GNOME, ships no agent of its own, so
+    # nixpkgs falls back to the demo agent and it shows up as a running app.
+    services.geoclue2.enableDemoAgent = false;
+
     # Unlock KWallet automatically on SDDM login so apps (e.g. VSCode) can
     # access the OS keyring without prompting or failing silently.
     security.pam.services.sddm.enableKwallet = true;
