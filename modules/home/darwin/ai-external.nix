@@ -7,6 +7,16 @@
 
 let
   cfg = config.my.home.aiExternal;
+
+  # Packaged here rather than inline in home.packages because the launchd
+  # agent below needs the store path of the same build.
+  ollamaSyncExternal = pkgs.writeShellScriptBin "ollama-sync-external" (
+    ''
+      OLLAMA_LOCAL_STORE_DEFAULT=${lib.escapeShellArg cfg.ollama.localStore}
+      OLLAMA_SSD_STORE_DEFAULT=${lib.escapeShellArg "${cfg.root}/ollama/models"}
+    ''
+    + builtins.readFile ./scripts/ollama-sync-external.sh
+  );
 in
 {
   # ---------------------------------------------------------------------------
@@ -16,15 +26,25 @@ in
   # configurations rather than ./home.nix, so no Linux host evaluates it. The
   # Linux side runs Ollama as a system service instead (my.services.ollama).
   #
-  # Two parts, and the first one does most of the work:
+  # Three parts:
   #
-  # 1. Environment. Ollama, Draw Things and ComfyUI each want tens of gigabytes
-  #    of models and each has its own idea of where those live. Pointing them at
-  #    one root is just OLLAMA_MODELS and DRAWTHINGS_MODELS_DIR, after which the
-  #    normal commands are the interface: `ollama pull`, `draw-things-cli`, the
-  #    ComfyUI venv. Nothing wraps them.
+  # 1. Environment. Draw Things and ComfyUI want tens of gigabytes of models
+  #    and each has its own idea of where those live. Pointing them at one root
+  #    is just DRAWTHINGS_MODELS_DIR, after which the normal commands are the
+  #    interface: `draw-things-cli`, the ComfyUI venv. Nothing wraps them.
   #
-  # 2. serve-ai-external. The one thing with no native equivalent: bringing the
+  # 2. Ollama is the exception, because it has to keep working with the SSD
+  #    unplugged (the laptop leaves the desk; the coding models don't). Its
+  #    serving store is the local default, ~/.ollama/models, with no
+  #    OLLAMA_MODELS anywhere, so the GUI app and a plain `ollama serve` agree
+  #    without reading any environment. Pulls land locally. The SSD store is an
+  #    archive that ollama-sync-external merges in as symlinks: a launchd agent
+  #    fires it on every mount and unmount under /Volumes, linking the archive
+  #    in when the drive appears and clearing dead links when it goes. The
+  #    cleanup half is load-bearing: one dangling manifest symlink makes every
+  #    ollama command fail, and ollama's own prune won't remove it.
+  #
+  # 3. serve-ai-external. The one thing with no native equivalent: bringing the
   #    three up headless with the right arguments, and saying whether they're
   #    up. gRPCServerCLI has no config file, so its models directory, port,
   #    weight cache and TLS have to live somewhere, and that somewhere is the
@@ -33,7 +53,7 @@ in
   # Layout under the root:
   #   Models             every model I own, shared
   #   Input, Output      ComfyUI's working directories
-  #   ollama/models      OLLAMA_MODELS
+  #   ollama/models      the archive, merged into ~/.ollama/models by symlink
   #   drawthings/models  gRPCServerCLI's argument, DRAWTHINGS_MODELS_DIR
   #   comfyui            the Comfy Desktop install: ComfyUI/ and standalone-env/
   #   logs, run          one log and one pidfile per service
@@ -71,6 +91,16 @@ in
       type = lib.types.str;
       default = "127.0.0.1:11434";
       description = "Address ollama serve binds, and the one status checks.";
+    };
+
+    ollama.localStore = lib.mkOption {
+      type = lib.types.str;
+      default = "${config.home.homeDirectory}/.ollama/models";
+      description = ''
+        The store Ollama serves from. Kept at Ollama's own default on purpose,
+        so the GUI app and a bare `ollama serve` use it without any environment
+        set. ollama-sync-external merges the SSD archive into it.
+      '';
     };
 
     drawThings.port = lib.mkOption {
@@ -137,6 +167,7 @@ in
 
   config = lib.mkIf cfg.enable {
     home.packages = [
+      ollamaSyncExternal
       (pkgs.writeShellScriptBin "serve-ai-external" (
         # Defaults from the options, prepended so the script itself stays plain
         # shell: no Nix interpolation inside it, and it can be run or linted
@@ -144,6 +175,7 @@ in
         ''
           AI_ROOT_DEFAULT=${lib.escapeShellArg cfg.root}
           OLLAMA_HOST_DEFAULT=${lib.escapeShellArg cfg.ollama.host}
+          OLLAMA_LOCAL_STORE_DEFAULT=${lib.escapeShellArg cfg.ollama.localStore}
           DRAWTHINGS_PORT_DEFAULT=${toString cfg.drawThings.port}
           DRAWTHINGS_TLS_DEFAULT=${if cfg.drawThings.tls then "1" else "0"}
           DRAWTHINGS_CACHE_DEFAULT=${toString cfg.drawThings.weightsCacheGiB}
@@ -159,10 +191,24 @@ in
 
     # The isolation layer. With these set, the tools' own commands already read
     # and write the external disk, which is why there's nothing wrapping them.
+    # Ollama is deliberately absent: its serving store is the local default so
+    # it works with the drive unplugged, and the archive arrives via symlinks.
     home.sessionVariables = {
       EXTERNAL_AI_ROOT = cfg.root;
-      OLLAMA_MODELS = "${cfg.root}/ollama/models";
       DRAWTHINGS_MODELS_DIR = "${cfg.root}/drawthings/models";
+    };
+
+    # Re-merge on every mount or unmount under /Volumes. The script is cheap
+    # and idempotent, so firing for unrelated volumes costs nothing.
+    launchd.agents.ollama-sync-external = {
+      enable = true;
+      config = {
+        ProgramArguments = [ "${ollamaSyncExternal}/bin/ollama-sync-external" ];
+        WatchPaths = [ "/Volumes" ];
+        RunAtLoad = true;
+        StandardOutPath = "${config.home.homeDirectory}/.ollama/logs/sync-external.log";
+        StandardErrorPath = "${config.home.homeDirectory}/.ollama/logs/sync-external.log";
+      };
     };
   };
 }

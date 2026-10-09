@@ -1,10 +1,11 @@
 # serve-ai-external: the local model servers, headless, weights on the SSD.
 #
 # One command rather than a wrapper per tool. `ollama`, `draw-things-cli` and
-# the ComfyUI venv are fine as they are, and the environment already points them
-# at the same root (OLLAMA_MODELS, DRAWTHINGS_MODELS_DIR, both set by
-# ../ai-external.nix), so `ollama pull llava` lands on the SSD with nothing in
-# the way.
+# the ComfyUI venv are fine as they are. Draw Things and ComfyUI read the root
+# from the environment (DRAWTHINGS_MODELS_DIR, set by ../ai-external.nix).
+# Ollama serves its local default store, with the SSD archive merged in as
+# symlinks by ollama-sync-external, so pulls land on the internal disk and the
+# server keeps working with the drive unplugged.
 #
 # What has no native equivalent is starting these three headless with the right
 # arguments and knowing whether they're up. gRPCServerCLI in particular takes
@@ -77,7 +78,7 @@ running() {
 
 models_of() {
   case "$1" in
-    ollama) echo "$ROOT/ollama/models" ;;
+    ollama) echo "$OLLAMA_LOCAL_STORE_DEFAULT" ;;
     drawthings) echo "$ROOT/drawthings/models" ;;
     comfyui) echo "$COMFYUI_MODELS_DEFAULT" ;;
   esac
@@ -118,8 +119,10 @@ start_one() {
   case "$svc" in
     ollama)
       need_command ollama "Install Ollama, or put its binary on PATH."
-      mkdir -p "$models"
-      OLLAMA_MODELS="$models" OLLAMA_HOST="$OLLAMA_HOST_DEFAULT" \
+      # Merge the archive before serving so it's visible from the first
+      # request. The store itself is the local default; no OLLAMA_MODELS.
+      ollama-sync-external || true
+      OLLAMA_HOST="$OLLAMA_HOST_DEFAULT" \
         nohup ollama serve >>"$log" 2>&1 &
       track "$svc" $!
       ;;
