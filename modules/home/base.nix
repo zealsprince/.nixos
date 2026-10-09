@@ -542,6 +542,15 @@ in
             "gpg \"ssh\"".program = opSshSign;
           })
         ];
+
+        # Work identity for everything under ~/Projects/oec, whatever the remote
+        # host alias. The signing key carries the OEC UID too.
+        includes = [
+          {
+            condition = "gitdir:~/Projects/oec/";
+            contents.user.email = "andrew.lake@oeconnection.com";
+          }
+        ];
       }
     );
 
