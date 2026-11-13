@@ -14,7 +14,7 @@ let
         id = "ollama";
         name = "Ollama";
         base_url = "http://127.0.0.1:11434/v1";
-        type = "openai";
+        type = "completions";
         api_key = "ollama";
         models = [
           {
@@ -36,7 +36,7 @@ let
         id = "openai";
         name = "OpenAI";
         base_url = "https://api.openai.com/v1";
-        type = "openai";
+        type = "responses";
         api_key = "$OPENAI_API_KEY";
         models = [
           {
@@ -73,7 +73,7 @@ let
       gemini = {
         id = "gemini";
         name = "Gemini";
-        type = "google";
+        type = "completions";
         api_key = "$GEMINI_API_KEY";
         models = [
           {
