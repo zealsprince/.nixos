@@ -40,6 +40,7 @@ in
     #   personal/ -> Zed (personal) + the personal/vera Claude configs
     #   work/     -> the DEFAULT Claude config (~/.claude), which is the work
     #                account that the bare `claude` command and VSCode use.
+    #   archive/  -> nowhere. Retired skills, kept for reference.
     skillBuckets = lib.mkOption {
       type = lib.types.attrsOf (lib.types.listOf lib.types.str);
       default =
@@ -109,7 +110,7 @@ in
 
     acpPackage = lib.mkOption {
       type = lib.types.str;
-      default = "@agentclientprotocol/claude-agent-acp@0.81.0";
+      default = "@agentclientprotocol/claude-agent-acp@0.107.0";
       description = ''
         npm package (pinned) for the Claude ACP adapter used by the Zed
         agent_servers. The activation step rewrites any older adapter in the

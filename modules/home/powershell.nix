@@ -8,7 +8,7 @@ let
     src = pkgs.fetchFromGitHub {
       owner = "smastrorocco";
       repo = "terraposh";
-      rev = "master";
+      rev = "54e839629165c117429b75387451274db14ae82c";
       sha256 = "sha256-1/ZH53wDIdWrvHbrQkjMt5tXEqdFemxzPeidqNZ0mfw=";
     };
 

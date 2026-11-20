@@ -199,7 +199,7 @@ in
         # Essentials
         resources
         obsidian
-        libreoffice-still
+        libreoffice-fresh
         deskflow
 
         # Dropbox (Maestral) + Dolphin service-menu helper runtime deps
