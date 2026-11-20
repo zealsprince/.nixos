@@ -10,6 +10,9 @@
 let
   spotiflac = pkgs.callPackage ../../../pkgs/spotiflac/default.nix { };
 
+  # Repo-local until nixpkgs catches up with PureRef's releases. See pkgs/pureref.
+  pureref = pkgs-unstable.callPackage ../../../pkgs/pureref { };
+
   # ArtCraft's Crafting Apps. ArtCraft itself ships no Linux build.
   craft-apps = map (app: pkgs.callPackage ../../../pkgs/craft-apps { inherit app; }) [
     "cadcraft"
@@ -264,7 +267,7 @@ in
         pkgs-unstable.gimp-with-plugins
         photogimp
         affinity-v3-gpu
-        pkgs-unstable.pureref
+        pureref
         darktable
         (blender.override { rocmSupport = true; })
         freecad
