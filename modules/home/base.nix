@@ -602,15 +602,23 @@ in
               rm -f "$xdg_config"
             fi
 
-            # Rewrite the file deterministically (no public host entries).
+            # Rewrite the file deterministically (no personal host entries).
             umask 077
+
+            # Bitbucket moved SSH to ssh.bitbucket.org on 2026-11-12. Same host
+            # keys, so HostKeyAlias keeps existing known_hosts entries valid.
+            cat > "$xdg_config" <<'EOF'
+      Host bitbucket.org
+        HostName ssh.bitbucket.org
+        HostKeyAlias bitbucket.org
+      EOF
+
             if ${lib.boolToString cfg.ssh.use1PasswordAgent}; then
-              cat > "$xdg_config" <<'EOF'
+              cat >> "$xdg_config" <<'EOF'
+
       Host *
         IdentityAgent "${cfg.ssh.onePasswordAgentSock}"
       EOF
-            else
-              : > "$xdg_config"
             fi
 
             chmod 600 "$xdg_config"

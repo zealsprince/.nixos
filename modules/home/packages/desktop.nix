@@ -255,6 +255,7 @@ in
         dbeaver-bin
         chatbox
         unityhub
+        jetbrains.rider
         godot
         love
 
