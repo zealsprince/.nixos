@@ -19,7 +19,8 @@
     # qt5 webengine. Jokler's flake carries the 25.11 derivation with webengine
     # swapped for a stub, so it builds against our nixpkgs without pulling in
     # the insecure qtwebengine. Only the "Browse Online" addons tab goes blank.
-    # Wired up as an overlay in hosts/ANDREW-DREAMREAPER/default.nix.
+    # Wired up as an overlay in hosts/ANDREW-DREAMREAPER/default.nix and in
+    # mkPkgs below for the standalone Home Manager configs.
     ts3-noweb = {
       url = "github:Jokler/ts3client-noweb-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -165,9 +166,11 @@
         import nixpkgs {
           inherit system;
           config.allowUnfree = true;
+          config.permittedInsecurePackages = import ./modules/permitted-insecure.nix;
           overlays = [
             inputs.nur.overlays.default
             inputs.affinity-nix.overlays.default
+            inputs.ts3-noweb.overlays.default
             (final: prev: {
               inetutils =
                 if prev.stdenv.hostPlatform.isDarwin then

@@ -2,9 +2,7 @@
 
 {
   # Allow explicitly permitted insecure deps required by some packages.
-  nixpkgs.config.permittedInsecurePackages = lib.mkDefault [
-    "pnpm-10.29.2"
-  ];
+  nixpkgs.config.permittedInsecurePackages = lib.mkDefault (import ../permitted-insecure.nix);
   # ===========================================================================
   # Common, reusable NixOS settings
   #
